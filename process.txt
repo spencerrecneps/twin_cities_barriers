@@ -1,0 +1,100 @@
+1. Run code from "bike_fac_costs.sql"
+
+2. QGIS: Rasterize-Vector to Raster (GDAL/OGR)
+      (inputs not specified here should be left at defaults)
+      - Input layer: bike_fac_costs_exist
+      - Attribute field: "cell_cost" column
+      - Horizontal=30
+      - Vertical=30
+      - Raster extent (click the elipses): Use extent from "Community_designations" layer
+      - Advanced parameters:
+            - Output raster type: Uint16
+            - Nodata value: 9999
+            - Additional creation parameters: "-at -init 30 -te 419967.47 4924223.79 521254.70 5029129.99" (without quotes)
+      (creates a temporary raster file to be used as input in next step)
+gdal_rasterize -a cell_cost -ot UInt16 -tr 30 30 \
+  -a_nodata 9999 -co COMPRESS=DEFLATE -co PREDICTOR=1 \
+  -co ZLEVEL=6 -at -init 30 \
+  -te 419967.47 4924223.79 521254.70 5029129.99 \
+  -l "generated"."bike_fac_costs_exist" \
+  "PG:dbname='twin_cities_barriers' host=192.168.22.220 port=5432 user='gis' password='gis' sslmode=disable" \
+  "./existing.tif"
+
+3. QGIS: Rasterize-Vector to Raster (GDAL/OGR)
+      (inputs not specified here should be left at defaults)
+      - Input layer: bike_fac_costs_plan
+      - Attribute field: "cell_cost" column
+      - Horizontal=30
+      - Vertical=30
+      - Raster extent (click the elipses): Use extent from "Community_designations" layer
+      - Advanced parameters:
+            - Output raster type: Uint16
+            - Nodata value: 9999
+            - Additional creation parameters: "-at -init 30 -te 419967.47 4924223.79 521254.70 5029129.99" (without quotes)
+      (creates a temporary raster file to be used as input in next step)
+gdal_rasterize -a cell_cost -ot UInt16 -tr 30 30 \
+  -a_nodata 9999 -co COMPRESS=DEFLATE -co PREDICTOR=1 \
+  -co ZLEVEL=6 -at -init 30 \
+  -te 419967.47 4924223.79 521254.70 5029129.99 \
+  -l "generated"."bike_fac_costs_plan" \
+  "PG:dbname='twin_cities_barriers' host=192.168.22.220 port=5432 user='gis' password='gis' sslmode=disable" \
+  "./planned.tif"
+
+4. QGIS: Rasterize-Vector to Raster (GDAL/OGR)
+      (inputs not specified here should be left at defaults)
+      - Input layer: bike_fac_costs_locals
+      - Attribute field: "cell_cost" column
+      - Horizontal=30
+      - Vertical=30
+      - Raster extent (click the elipses): Use extent from "Community_designations" layer
+      - Advanced parameters:
+            - Output raster type: Uint16
+            - Nodata value: 9999
+            - Additional creation parameters: "-at -init 30 -te 419967.47 4924223.79 521254.70 5029129.99" (without quotes)
+      (creates a temporary raster file to be used as input in next step)
+gdal_rasterize -a cell_cost -ot UInt16 -tr 30 30 \
+  -a_nodata 9999 -co COMPRESS=DEFLATE -co PREDICTOR=1 \
+  -co ZLEVEL=6 -at -init 30 \
+  -te 419967.47 4924223.79 521254.70 5029129.99 \
+  -l "generated"."bike_fac_costs_locals" \
+  "PG:dbname='twin_cities_barriers' host=192.168.22.220 port=5432 user='gis' password='gis' sslmode=disable" \
+  "./locals.tif"
+
+6. QGIS: Raster calculator (GDAL/OGR)
+      (inputs not specified here should be left at defaults)
+      - Input layer A: select result of merge in Step 2
+      - Input layer B: select result of merge in Step 3
+      - Input layer C: select result of merge in Step 4
+      - Calculation in gdalnumeric ....: "minimum(minimum(A,B),C)" (without quotes)
+      - Output raster type: Uint16
+gdal_calc.py --calc "minimum(minimum(A,B),C)" --format GTiff \
+  --type UInt16 \
+  -A "./existing.tif" --A_band 1 \
+  -B "./planned.tif" --B_band 1 \
+  -C "./locals.tif" --C_band 1 \
+  --outfile "./composite.tif"
+
+7. QGIS: r.cost.full (GRASS7)
+      - Unit cost layer: composite
+      - Start points: raster_test1
+      - Use knights move: true
+      - GRASS cell size: 30
+      - save as cost1.tif and then cost2.tif
+
+8. QGIS: r.neighbors (GRASS7)
+      - Input raster layer: cost1
+      - Neighborhood operation: minimum
+      - Neighborhood size: 5
+      - Use circular neighborhood: true
+      - GRASS cell size: 30
+
+
+
+gdal_calc.py --calc "A+B"
+--format GTiff
+--type Int32
+-A /tmp/processing13972982dde945dd829177120495c30c/2c7b1c9dcf8e438d9cf3dad7a4594e28/output.tif
+--A_band 1
+-B /tmp/processing13972982dde945dd829177120495c30c/18aac947623e4dcc8507616291fb5a4f/output.tif
+--B_band 1
+--outfile "[temporary file]"
