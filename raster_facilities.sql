@@ -85,4 +85,4 @@ FROM    allrast;
 SELECT AddRasterConstraints('raster_facilities'::name, 'rast'::name);
 
 -- index
-CREATE INDEX sidx_raster_facilities_rast ON generated.raster_facilities USING GIST (rast);
+CREATE INDEX sidx_raster_facilities_rast ON generated.raster_facilities USING GIST (ST_ConvexHull(rast));
