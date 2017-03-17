@@ -2,6 +2,7 @@
 # with documentation from http://scikit-image.org/docs/dev/api/skimage.graph.html?highlight=cost#skimage.graph.MCP.find_costs
 import sys, getopt, gdal, osr
 from skimage.graph import MCP
+from numpy import uint16
 import numpy as np
 
 
@@ -18,7 +19,7 @@ def usage():
 def raster2array(rasterfn):
     raster = gdal.Open(rasterfn)
     band = raster.GetRasterBand(1)
-    array = band.ReadAsArray()
+    array = band.ReadAsArray().astype(uint16)
     return array
 
 def coord2pixelOffset(rasterfn,x,y):
@@ -55,7 +56,7 @@ def array2raster(newRasterfn,rasterfn,array):
     rows = array.shape[0]
 
     driver = gdal.GetDriverByName('GTiff')
-    outRaster = driver.Create(newRasterfn, cols, rows, gdal.GDT_Byte)
+    outRaster = driver.Create(newRasterfn, cols, rows, eType=gdal.GDT_UInt16)
     outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))
     outband = outRaster.GetRasterBand(1)
     outband.WriteArray(array)
