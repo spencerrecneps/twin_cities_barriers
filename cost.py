@@ -1,9 +1,18 @@
 # adapted from http://gis.stackexchange.com/questions/28583/gdal-perform-simple-least-cost-path-analysis
 # with documentation from http://scikit-image.org/docs/dev/api/skimage.graph.html?highlight=cost#skimage.graph.MCP.find_costs
-import gdal, osr
+import sys, getopt, gdal, osr
 from skimage.graph import MCP
 import numpy as np
 
+
+def usage():
+    print('Usage: '+sys.argv[0]+' [option...]' )
+    print('\nOPTIONS\n')
+    print('-h [--help] - Display this guide')
+    print('-i [--input] <input file path> - Path to input cost raster')
+    print('-o [--output] <output file path> - Path to save output to')
+    print('-x <x coordinate> - X coordinate of the starting point (in the CRS of the input raster)')
+    print('-y <y coordinate> - Y coordinate of the starting point (in the CRS of the input raster)')
 
 def raster2array(rasterfn):
     raster = gdal.Open(rasterfn)
@@ -54,14 +63,39 @@ def array2raster(newRasterfn,rasterfn,array):
     outRaster.SetProjection(outRasterSRS.ExportToWkt())
     outband.FlushCache()
 
-def main(CostSurfacefn,outputPathfn,startCoord):
+#def main(CostSurfacefn,outputPathfn,startCoord):
+def main(argv):
+    try:
+        opts, args: getopt.getopt(argv, "hi:o:x:y:",["help","input","output"])
+    except getopt.GetoptError:
+        usage()
+        sys.exit(2)
+
+    # declarations
+    CostSurfacefn = string()
+    outputPathfn = string()
+    xCoord = float()
+    yCoord = float()
+
+    # parse options
+    for opt, arg in opts:
+        if opt in ("-h", "--help"):
+            usage()
+            sys.exit()
+        elif opt in ("-i", "--input"):
+            CostSurfacefn = arg
+        elif opt in ("-o", "--output"):
+            outputPathfn = arg
+        elif opt = "-x":
+            xCoord = arg
+        elif opt = "-y":
+            yCoord = arg
+
+    startCoord = (xCoord,yCoord)
     costSurfaceArray = raster2array(CostSurfacefn) # creates array from cost surface raster
     costSurface = createCostSurface(CostSurfacefn,costSurfaceArray,startCoord) # creates path array
     array2raster(outputPathfn,CostSurfacefn,costSurface) # converts path array to raster
 
 
 if __name__ == "__main__":
-    CostSurfacefn = '/home/spencer/gis/tcbarriers/cost.tif'
-    startCoord = (476706,4976282)
-    outputPathfn = '/home/spencer/gis/tcbarriers/cost_surface.tif'
-    main(CostSurfacefn,outputPathfn,startCoord)
+    main(sys.argv[1:])
