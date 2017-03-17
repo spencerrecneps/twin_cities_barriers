@@ -13,6 +13,7 @@ def usage():
     print('-o [--output] <output file path> - Path to save output to')
     print('-x <x coordinate> - X coordinate of the starting point (in the CRS of the input raster)')
     print('-y <y coordinate> - Y coordinate of the starting point (in the CRS of the input raster)')
+    print('\n')
 
 def raster2array(rasterfn):
     raster = gdal.Open(rasterfn)
@@ -66,14 +67,33 @@ def array2raster(newRasterfn,rasterfn,array):
 #def main(CostSurfacefn,outputPathfn,startCoord):
 def main(argv):
     try:
-        opts, args: getopt.getopt(argv, "hi:o:x:y:",["help","input","output"])
+        opts, args = getopt.getopt(argv, "hi:o:x:y:",["help","input","output"])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
 
+    # check required flags
+    flags = [i[0] for i in opts]
+    if set(["-i","--input"]).isdisjoint(flags):
+        usage()
+        print('\n<< Hint: Missing input file parameter >>\n')
+        sys.exit(2)
+    if set(["-o","--output"]).isdisjoint(flags):
+        usage()
+        print('\n<< Hint: Missing output file parameter >>\n')
+        sys.exit(2)
+    if '-x' not in flags:
+        usage()
+        print('\n<< Hint: Missing X coordinate parameter >>\n')
+        sys.exit(2)
+    if '-y' not in flags:
+        usage()
+        print('\n<< Hint: Missing Y coordinate parameter >>\n')
+        sys.exit(2)
+
     # declarations
-    CostSurfacefn = string()
-    outputPathfn = string()
+    CostSurfacefn = ''
+    outputPathfn = ''
     xCoord = float()
     yCoord = float()
 
@@ -86,10 +106,10 @@ def main(argv):
             CostSurfacefn = arg
         elif opt in ("-o", "--output"):
             outputPathfn = arg
-        elif opt = "-x":
-            xCoord = arg
-        elif opt = "-y":
-            yCoord = arg
+        elif opt == "-x":
+            xCoord = float(arg)
+        elif opt == "-y":
+            yCoord = float(arg)
 
     startCoord = (xCoord,yCoord)
     costSurfaceArray = raster2array(CostSurfacefn) # creates array from cost surface raster
