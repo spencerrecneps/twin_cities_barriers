@@ -13,11 +13,13 @@ DBPASS="${DBPASS:-gis}"
 DBNAME="${DBNAME:-twin_cities_barriers}"
 DBSRID="${DBSRID:-26915}"
 SKIPVECTOR="${SKIPEVECTOR:-0}"
+TEMPDIR="${TEMPDIR:-none}"
+OVERWRITE="${OVERWRITE:-0}"
 
 function usage() {
     echo -n \
 "
-Usage: $(basename "$0") [-h] [-v] [-d]
+Usage: $(basename "$0") [-h] [-v] [-d] [-w] [-f <folder location>] -o <folder location>
 
 Run the Twin Cities Barriers analysis
 
@@ -26,6 +28,9 @@ Additional arguments are:
 -h - Display this help
 -v - Skip re-creation of the vector files in the database
 -d - Run in debug mode (doesn't delete temporary files)
+-w - Overwrite any existing files
+-f - Output folder to store intermediate files (if not given a temporary folder is used)
+-o - Output folder to store final files
 
 Optional ENV vars:
 
@@ -39,7 +44,8 @@ DBSRID - Default: 26915
 }
 
 # Parse the command line options
-while getopts "h?v?d?" opt; do
+hasO=0
+while getopts "h?v?d?f:?o:" opt; do
     case "$opt" in
     h)  usage
         exit 0
@@ -48,14 +54,34 @@ while getopts "h?v?d?" opt; do
         ;;
     d)  DEBUG=1
         ;;
+    w)  OVERWRITE=1
+        ;;
+    f)  TEMPDIR=${OPTARG}
+        ;;
+    o)  OUTDIR=${OPTARG}
+        hasO=1
+        ;;
+    \?)
+        usage
+        exit 1
+        ;;
+    :)
+        echo "Option -$OPTARG requires an argument"
+        exit 1
     esac
 done
+if [ ${hasO} -eq 0 ]; then
+    echo "Missing -o option for output directory"
+    exit 1
+fi
 
-# Create temporary directory
-TEMPDIR=`mktemp -d`
-cd `dirname $0`
-if [ ${DEBUG} -eq 1 ]; then
-    echo "Saving temporary files to ${TEMPDIR}"
+# Create temporary directory if necessary
+if [ ${TEMPDIR} = 'none' ]; then
+    TEMPDIR=`mktemp -d`
+    cd `dirname $0`
+    if [ ${DEBUG} -eq 1 ]; then
+        echo "Saving temporary files to ${TEMPDIR}"
+    fi
 fi
 
 # First, create the vector cost layers and od_points
@@ -92,11 +118,16 @@ IFS=' ' read -r -a TRACTIDS <<< `psql -d twin_cities_barriers -h 192.168.22.220 
 
 for index in "${!XVALS[@]}"
 do
-    python cost.py \
-        -i "${TEMPDIR}/cost_input.tif" \
-        -o "${TEMPDIR}/${TRACTIDS[index]}.tif" \
-        -x "${XVALS[index]}" \
-        -y "${YVALS[index]}"
+    if [ ! -e "${TEMPDIR}/${TRACTIDS[index]}.tif" ] || [ ${OVERWRITE} -eq 1 ]; then
+        echo "Creating ${TEMPDIR}/${TRACTIDS[index]}.tif"
+        python cost.py \
+            -i "${TEMPDIR}/cost_input.tif" \
+            -o "${TEMPDIR}/${TRACTIDS[index]}.tif" \
+            -x "${XVALS[index]}" \
+            -y "${YVALS[index]}"
+    else
+        echo "Found ${TEMPDIR}/${TRACTIDS[index]}.tif -> skipping"
+    fi
 
     echo "$index ${array[index]}"
 done
