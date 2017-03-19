@@ -96,6 +96,7 @@ if [ ${SKIPVECTOR} -eq 0 ]; then
 fi
 
 # Rasterize
+echo "Rasterizing existing facilities"
 gdal_rasterize \
     -a cell_cost \
     -ot UInt16 \
@@ -109,7 +110,50 @@ gdal_rasterize \
     -te 419967.47 4924223.79 521254.70 5029129.99 \
     -l "generated"."bike_fac_costs_exist" \
     "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
-    "${TEMPDIR}/cost_input.tif"
+    "${TEMPDIR}/cost_exist.tif"
+
+echo "Rasterizing planned facilities"
+gdal_rasterize \
+    -a cell_cost \
+    -ot UInt16 \
+    -tr 30 30 \
+    -a_nodata 9999 \
+    -co COMPRESS=DEFLATE \
+    -co PREDICTOR=1 \
+    -co ZLEVEL=6 \
+    -at \
+    -init 30 \
+    -te 419967.47 4924223.79 521254.70 5029129.99 \
+    -l "generated"."bike_fac_costs_plan" \
+    "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
+    "${TEMPDIR}/cost_plan.tif"
+
+echo "Rasterizing local roads"
+gdal_rasterize \
+    -a cell_cost \
+    -ot UInt16 \
+    -tr 30 30 \
+    -a_nodata 9999 \
+    -co COMPRESS=DEFLATE \
+    -co PREDICTOR=1 \
+    -co ZLEVEL=6 \
+    -at \
+    -init 30 \
+    -te 419967.47 4924223.79 521254.70 5029129.99 \
+    -l "generated"."bike_fac_costs_locals" \
+    "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
+    "${TEMPDIR}/cost_locals.tif"
+
+# Combine costs
+echo "Creating composite cost layer"
+gdal_calc.py \
+    --calc "numpy.fmin(numpy.fmin(A,B),C)" \
+    --format GTiff \
+    --type UInt16 \
+    -A "${TEMPDIR}/cost_exist.tif" --A_band 1 \
+    -B "${TEMPDIR}/cost_plan.tif" --B_band 1 \
+    -C "${TEMPDIR}/cost_locals.tif" --C_band 1 \
+    --outfile "${TEMPDIR}/cost_composite.tif"
 
 # Create least-distance cost matrix for each point
 # first, we need to grab the data from the OD points
@@ -122,7 +166,7 @@ do
     if [ ! -e "${TEMPDIR}/${TRACTIDS[index]}.tif" ] || [ ${OVERWRITE} -eq 1 ]; then
         echo "Creating ${TEMPDIR}/${TRACTIDS[index]}.tif"
         python cost.py \
-            -i "${TEMPDIR}/cost_input.tif" \
+            -i "${TEMPDIR}/cost_composite.tif" \
             -o "${TEMPDIR}/${TRACTIDS[index]}.tif" \
             -x "${XVALS[index]}" \
             -y "${YVALS[index]}"
