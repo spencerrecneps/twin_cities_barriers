@@ -72,6 +72,7 @@ while getopts "h?v?d?f:?o:" opt; do
 done
 if [ ${hasO} -eq 0 ]; then
     echo "Missing -o option for output directory"
+    usage
     exit 1
 fi
 
