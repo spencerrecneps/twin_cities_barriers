@@ -110,7 +110,7 @@ gdal_rasterize \
     -te 419967.47 4924223.79 521254.70 5029129.99 \
     -l "generated"."bike_fac_costs_exist" \
     "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
-    "${TEMPDIR}/cost_exist.tif"
+    "${TEMPDIR}/cost_exist.tif" &
 
 echo "Rasterizing planned facilities"
 gdal_rasterize \
@@ -126,7 +126,7 @@ gdal_rasterize \
     -te 419967.47 4924223.79 521254.70 5029129.99 \
     -l "generated"."bike_fac_costs_plan" \
     "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
-    "${TEMPDIR}/cost_plan.tif"
+    "${TEMPDIR}/cost_plan.tif" &
 
 echo "Rasterizing local roads"
 gdal_rasterize \
@@ -142,7 +142,9 @@ gdal_rasterize \
     -te 419967.47 4924223.79 521254.70 5029129.99 \
     -l "generated"."bike_fac_costs_locals" \
     "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
-    "${TEMPDIR}/cost_locals.tif"
+    "${TEMPDIR}/cost_locals.tif" &
+
+wait
 
 # Combine costs
 echo "Creating composite cost layer"
