@@ -171,13 +171,15 @@ do
             -i "${TEMPDIR}/cost_composite.tif" \
             -o "${TEMPDIR}/${TRACTIDS[index]}.tif" \
             -x "${XVALS[index]}" \
-            -y "${YVALS[index]}"
+            -y "${YVALS[index]}" &
     else
         echo "Found ${TEMPDIR}/${TRACTIDS[index]}.tif -> skipping"
     fi
 
     echo "$index ${array[index]}"
 done
+
+wait
 
 # Delete temp dir
 if [ ${DEBUG} -ne 1 ]; then
