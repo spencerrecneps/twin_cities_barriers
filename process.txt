@@ -1,3 +1,6 @@
+Adapted from https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3531461/
+
+
 1. Run code from "bike_fac_costs.sql"
 
 2. QGIS: Rasterize-Vector to Raster (GDAL/OGR)
