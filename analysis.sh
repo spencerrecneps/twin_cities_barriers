@@ -106,7 +106,7 @@ gdal_rasterize \
     -co PREDICTOR=1 \
     -co ZLEVEL=6 \
     -at \
-    -init 30 \
+    -init 1000 \
     -te 419967.47 4924223.79 521254.70 5029129.99 \
     -l "generated"."bike_fac_costs_exist" \
     "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
@@ -144,17 +144,68 @@ gdal_rasterize \
     "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
     "${TEMPDIR}/cost_locals.tif" &
 
+echo "Rasterizing expressways"
+gdal_rasterize \
+    -a cell_cost \
+    -ot UInt16 \
+    -tr 30 30 \
+    -a_nodata 9999 \
+    -co COMPRESS=DEFLATE \
+    -co PREDICTOR=1 \
+    -co ZLEVEL=6 \
+    -at \
+    -init 0 \
+    -te 419967.47 4924223.79 521254.70 5029129.99 \
+    -l "generated"."bike_fac_costs_expys" \
+    "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
+    "${TEMPDIR}/cost_expys.tif" &
+
+echo "Rasterizing railroads"
+gdal_rasterize \
+    -a cell_cost \
+    -ot UInt16 \
+    -tr 30 30 \
+    -a_nodata 9999 \
+    -co COMPRESS=DEFLATE \
+    -co PREDICTOR=1 \
+    -co ZLEVEL=6 \
+    -at \
+    -init 30 \
+    -te 419967.47 4924223.79 521254.70 5029129.99 \
+    -l "generated"."bike_fac_costs_rails" \
+    "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
+    "${TEMPDIR}/cost_rails.tif" &
+
+echo "Rasterizing streams"
+gdal_rasterize \
+    -a cell_cost \
+    -ot UInt16 \
+    -tr 30 30 \
+    -a_nodata 9999 \
+    -co COMPRESS=DEFLATE \
+    -co PREDICTOR=1 \
+    -co ZLEVEL=6 \
+    -at \
+    -init 30 \
+    -te 419967.47 4924223.79 521254.70 5029129.99 \
+    -l "generated"."bike_fac_costs_streams" \
+    "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
+    "${TEMPDIR}/cost_streams.tif" &
+
 wait
 
 # Combine costs
 echo "Creating composite cost layer"
 gdal_calc.py \
-    --calc "numpy.fmin(numpy.fmin(A,B),C)" \
+    --calc "numpy.fmin(numpy.fmax(numpy.fmin(numpy.fmin(numpy.fmin(B,C),D),F),E),A)" \
     --format GTiff \
     --type UInt16 \
     -A "${TEMPDIR}/cost_exist.tif" --A_band 1 \
     -B "${TEMPDIR}/cost_plan.tif" --B_band 1 \
     -C "${TEMPDIR}/cost_locals.tif" --C_band 1 \
+    -D "${TEMPDIR}/cost_streams.tif" --D_band 1 \
+    -E "${TEMPDIR}/cost_expys.tif" --E_band 1 \
+    -F "${TEMPDIR}/cost_rails.tif" --F_band 1 \
     --outfile "${TEMPDIR}/cost_composite.tif"
 
 # Create least-distance cost matrix for each point

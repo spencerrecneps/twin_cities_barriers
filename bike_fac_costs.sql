@@ -9,6 +9,9 @@
 DROP TABLE IF EXISTS generated.bike_fac_costs_exist;
 DROP TABLE IF EXISTS generated.bike_fac_costs_plan;
 DROP TABLE IF EXISTS generated.bike_fac_costs_locals;
+DROP TABLE IF EXISTS generated.bike_fac_costs_expys;
+DROP TABLE IF EXISTS generated.bike_fac_costs_streams;
+DROP TABLE IF EXISTS generated.bike_fac_costs_rails;
 CREATE TABLE generated.bike_fac_costs_exist (
     id SERIAL PRIMARY KEY,
     geom geometry(multilinestring,:db_srid),
@@ -20,6 +23,21 @@ CREATE TABLE generated.bike_fac_costs_plan (
     cell_cost INTEGER
 );
 CREATE TABLE generated.bike_fac_costs_locals (
+    id SERIAL PRIMARY KEY,
+    geom geometry(multilinestring,:db_srid),
+    cell_cost INTEGER
+);
+CREATE TABLE generated.bike_fac_costs_expys (
+    id SERIAL PRIMARY KEY,
+    geom geometry(multilinestring,:db_srid),
+    cell_cost INTEGER
+);
+CREATE TABLE generated.bike_fac_costs_streams (
+    id SERIAL PRIMARY KEY,
+    geom geometry(multilinestring,:db_srid),
+    cell_cost INTEGER
+);
+CREATE TABLE generated.bike_fac_costs_rails(
     id SERIAL PRIMARY KEY,
     geom geometry(multilinestring,:db_srid),
     cell_cost INTEGER
@@ -53,12 +71,42 @@ SELECT  ST_Force2D(geom),
 FROM    roads_metro
 WHERE   f_class = 'A40';        -- need to determine how to define "local" road, assume A40 for now
 
+-- insert expressways
+INSERT INTO generated.bike_fac_costs_expys (
+    geom, cell_cost
+)
+SELECT  ST_Multi(ST_Force2D(geom)),
+        999
+FROM    expy;
+
+-- insert railroads
+INSERT INTO generated.bike_fac_costs_rails (
+    geom, cell_cost
+)
+SELECT  ST_Force2D(geom),
+        999
+FROM    osm_railroads;
+
+-- insert streams
+INSERT INTO generated.bike_fac_costs_streams (
+    geom, cell_cost
+)
+SELECT  ST_Force2D(geom),
+        999
+FROM    streams;
+
 -- indexes
 CREATE INDEX sidx_bkfaccostex_geom ON generated.bike_fac_costs_exist USING GIST (geom);
 ANALYZE generated.bike_fac_costs_exist;
 CREATE INDEX sidx_bkfaccostpl_geom ON generated.bike_fac_costs_plan USING GIST (geom);
 ANALYZE generated.bike_fac_costs_plan;
 CREATE INDEX sidx_bkfaccostlo_geom ON generated.bike_fac_costs_locals USING GIST (geom);
+ANALYZE generated.bike_fac_costs_locals;
+CREATE INDEX sidx_bkfaccostxp_geom ON generated.bike_fac_costs_expys USING GIST (geom);
+ANALYZE generated.bike_fac_costs_locals;
+CREATE INDEX sidx_bkfaccostrr_geom ON generated.bike_fac_costs_rails USING GIST (geom);
+ANALYZE generated.bike_fac_costs_locals;
+CREATE INDEX sidx_bkfaccostst_geom ON generated.bike_fac_costs_streams USING GIST (geom);
 ANALYZE generated.bike_fac_costs_locals;
 --
 --
