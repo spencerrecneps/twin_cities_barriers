@@ -106,7 +106,7 @@ gdal_rasterize \
     -co PREDICTOR=1 \
     -co ZLEVEL=6 \
     -at \
-    -init 1000 \
+    -init 100000 \
     -te 419967.47 4924223.79 521254.70 5029129.99 \
     -l "generated"."bike_fac_costs_exist" \
     "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
@@ -122,7 +122,7 @@ gdal_rasterize \
     -co PREDICTOR=1 \
     -co ZLEVEL=6 \
     -at \
-    -init 30 \
+    -init 100000 \
     -te 419967.47 4924223.79 521254.70 5029129.99 \
     -l "generated"."bike_fac_costs_plan" \
     "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
@@ -138,7 +138,7 @@ gdal_rasterize \
     -co PREDICTOR=1 \
     -co ZLEVEL=6 \
     -at \
-    -init 30 \
+    -init 100000 \
     -te 419967.47 4924223.79 521254.70 5029129.99 \
     -l "generated"."bike_fac_costs_locals" \
     "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
@@ -170,7 +170,7 @@ gdal_rasterize \
     -co PREDICTOR=1 \
     -co ZLEVEL=6 \
     -at \
-    -init 30 \
+    -init 0 \
     -te 419967.47 4924223.79 521254.70 5029129.99 \
     -l "generated"."bike_fac_costs_rails" \
     "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
@@ -197,7 +197,7 @@ wait
 # Combine costs
 echo "Creating composite cost layer"
 gdal_calc.py \
-    --calc "numpy.fmin(numpy.fmax(numpy.fmin(numpy.fmin(numpy.fmin(B,C),D),F),E),A)" \
+    --calc "numpy.fmin(numpy.fmax(numpy.fmax(numpy.fmin(numpy.fmin(B,C),D),F),E),A)" \
     --format GTiff \
     --type UInt16 \
     -A "${TEMPDIR}/cost_exist.tif" --A_band 1 \

@@ -93,7 +93,9 @@ INSERT INTO generated.bike_fac_costs_streams (
 )
 SELECT  ST_Force2D(geom),
         999
-FROM    streams;
+FROM    streams
+WHERE   barrier > 0;    --include major rivers
+--WHERE   barrier = 1;    --restrict to Met approved streams
 
 -- indexes
 CREATE INDEX sidx_bkfaccostex_geom ON generated.bike_fac_costs_exist USING GIST (geom);
