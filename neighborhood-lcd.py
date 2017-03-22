@@ -127,6 +127,7 @@ def main(argv):
     # get improved minimum cost
     minCostArrayA = costMinArray(costSurfaceArrayA,inputRadius)
     minCostArrayB = costMinArray(costSurfaceArrayB,inputRadius)
+<<<<<<< HEAD
     imprvMinCostArray = np.add(       # add constant equal to 2xradius to represent new connection
         minCostArrayA,
         minCostArrayB,
