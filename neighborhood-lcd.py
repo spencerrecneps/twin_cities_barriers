@@ -118,24 +118,40 @@ def main(argv):
     costSurfaceArrayA = raster2array(CostSurfaceA)
     costSurfaceArrayB = raster2array(CostSurfaceB)
 
-    # get existing minimum cost
-    existMinCost = np.add(costSurfaceArrayA,costSurfaceArrayB)
+    # get array of existing minimum cost
+    existMinCostArray = np.add(costSurfaceArrayA,costSurfaceArrayB)
+
+    # get shortest path cost
+    existMinCost = np.amin(existMinCostArray)
 
     # get improved minimum cost
     minCostArrayA = costMinArray(costSurfaceArrayA,inputRadius)
     minCostArrayB = costMinArray(costSurfaceArrayB,inputRadius)
-    imprvMinCost = np.add(       # add constant equal to 2xradius to represent new connection
+    imprvMinCostArray = np.add(       # add constant equal to 2xradius to represent new connection
         minCostArrayA,
         minCostArrayB,
-        np.full_like(minCostArrayA, inputRadius)
+        np.full_like(minCostArrayA, 2 * inputRadius)
     )
 
+    # compare improved to previous shortes path
+
     # get ratio of improved to existing
-    #benefit = np.divide(imprvMinCost,existMinCost)
-    benefit = np.subtract(existMinCost,imprvMinCost)
+    #benefit = np.divide(imprvMinCostArray,existMinCostArray)
+    benefit = np.maximum(
+        np.full_like(minCostArrayA, 0),
+        np.subtract(
+            imprvMinCostArray,
+            np.add(
+                minCostArrayA,
+                minCostArrayB
+            )
+        )
+    )
 
     # output new raster
     array2raster(outputPathfn,CostSurfaceA,benefit) # converts path array to raster
+    array2raster(outputPathfn[:-4]+"imp"+outputPathfn[-4:],CostSurfaceA,np.add(minCostArrayA,minCostArrayB)) # converts path array to raster
+    array2raster(outputPathfn[:-4]+"exst"+outputPathfn[-4:],CostSurfaceA,imprvMinCostArray) # converts path array to raster
 
 
 if __name__ == "__main__":
