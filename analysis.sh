@@ -45,7 +45,7 @@ DBSRID - Default: 26915
 
 # Parse the command line options
 hasO=0
-while getopts "h?v?d?f:?o:" opt; do
+while getopts "h?v?d?f:?o:w" opt; do
     case "$opt" in
     h)  usage
         exit 0
@@ -96,117 +96,152 @@ if [ ${SKIPVECTOR} -eq 0 ]; then
 fi
 
 # Rasterize
-echo "Rasterizing existing facilities"
-gdal_rasterize \
-    -a cell_cost \
-    -ot UInt16 \
-    -tr 30 30 \
-    -a_nodata 9999 \
-    -co COMPRESS=DEFLATE \
-    -co PREDICTOR=1 \
-    -co ZLEVEL=6 \
-    -at \
-    -init 100000 \
-    -te 419967.47 4924223.79 521254.70 5029129.99 \
-    -l "generated"."bike_fac_costs_exist" \
-    "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
-    "${TEMPDIR}/cost_exist.tif" &
+if [ ! -e "${TEMPDIR}/cost_exist.tif" ] || [ ${OVERWRITE} -eq 1 ]; then
+    echo "Rasterizing existing facilities"
+    gdal_rasterize \
+        -a cell_cost \
+        -ot UInt16 \
+        -tr 30 30 \
+        -a_nodata 9999 \
+        -co COMPRESS=DEFLATE \
+        -co PREDICTOR=1 \
+        -co ZLEVEL=6 \
+        -at \
+        -init 100000 \
+        -te 419967.47 4924223.79 521254.70 5029129.99 \
+        -l "generated"."bike_fac_costs_exist" \
+        "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
+        "${TEMPDIR}/cost_exist.tif" &
+    OVERWRITE=1     # ensure new dataset cascades through
+else
+    echo "${TEMPDIR}/cost_exist.tif -> skipping"
+fi
 
-echo "Rasterizing planned facilities"
-gdal_rasterize \
-    -a cell_cost \
-    -ot UInt16 \
-    -tr 30 30 \
-    -a_nodata 9999 \
-    -co COMPRESS=DEFLATE \
-    -co PREDICTOR=1 \
-    -co ZLEVEL=6 \
-    -at \
-    -init 100000 \
-    -te 419967.47 4924223.79 521254.70 5029129.99 \
-    -l "generated"."bike_fac_costs_plan" \
-    "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
-    "${TEMPDIR}/cost_plan.tif" &
+if [ ! -e "${TEMPDIR}/cost_plan.tif" ] || [ ${OVERWRITE} -eq 1 ]; then
+    echo "Rasterizing planned facilities"
+    gdal_rasterize \
+        -a cell_cost \
+        -ot UInt16 \
+        -tr 30 30 \
+        -a_nodata 9999 \
+        -co COMPRESS=DEFLATE \
+        -co PREDICTOR=1 \
+        -co ZLEVEL=6 \
+        -at \
+        -init 100000 \
+        -te 419967.47 4924223.79 521254.70 5029129.99 \
+        -l "generated"."bike_fac_costs_plan" \
+        "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
+        "${TEMPDIR}/cost_plan.tif" &
+    OVERWRITE=1     # ensure new dataset cascades through
+else
+    echo "${TEMPDIR}/cost_plan.tif -> skipping"
+fi
 
-echo "Rasterizing local roads"
-gdal_rasterize \
-    -a cell_cost \
-    -ot UInt16 \
-    -tr 30 30 \
-    -a_nodata 9999 \
-    -co COMPRESS=DEFLATE \
-    -co PREDICTOR=1 \
-    -co ZLEVEL=6 \
-    -at \
-    -init 100000 \
-    -te 419967.47 4924223.79 521254.70 5029129.99 \
-    -l "generated"."bike_fac_costs_locals" \
-    "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
-    "${TEMPDIR}/cost_locals.tif" &
+if [ ! -e "${TEMPDIR}/cost_locals.tif" ] || [ ${OVERWRITE} -eq 1 ]; then
+    echo "Rasterizing local roads"
+    gdal_rasterize \
+        -a cell_cost \
+        -ot UInt16 \
+        -tr 30 30 \
+        -a_nodata 9999 \
+        -co COMPRESS=DEFLATE \
+        -co PREDICTOR=1 \
+        -co ZLEVEL=6 \
+        -at \
+        -init 100000 \
+        -te 419967.47 4924223.79 521254.70 5029129.99 \
+        -l "generated"."bike_fac_costs_locals" \
+        "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
+        "${TEMPDIR}/cost_locals.tif" &
+    OVERWRITE=1     # ensure new dataset cascades through
+else
+    echo "${TEMPDIR}/cost_locals.tif -> skipping"
+fi
 
-echo "Rasterizing expressways"
-gdal_rasterize \
-    -a cell_cost \
-    -ot UInt16 \
-    -tr 30 30 \
-    -a_nodata 9999 \
-    -co COMPRESS=DEFLATE \
-    -co PREDICTOR=1 \
-    -co ZLEVEL=6 \
-    -at \
-    -init 0 \
-    -te 419967.47 4924223.79 521254.70 5029129.99 \
-    -l "generated"."bike_fac_costs_expys" \
-    "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
-    "${TEMPDIR}/cost_expys.tif" &
+if [ ! -e "${TEMPDIR}/cost_expys.tif" ] || [ ${OVERWRITE} -eq 1 ]; then
+    echo "Rasterizing expressways"
+    gdal_rasterize \
+        -a cell_cost \
+        -ot UInt16 \
+        -tr 30 30 \
+        -a_nodata 9999 \
+        -co COMPRESS=DEFLATE \
+        -co PREDICTOR=1 \
+        -co ZLEVEL=6 \
+        -at \
+        -init 0 \
+        -te 419967.47 4924223.79 521254.70 5029129.99 \
+        -l "generated"."bike_fac_costs_expys" \
+        "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
+        "${TEMPDIR}/cost_expys.tif" &
+    OVERWRITE=1     # ensure new dataset cascades through
+else
+    echo "${TEMPDIR}/cost_expys.tif -> skipping"
+fi
 
-echo "Rasterizing railroads"
-gdal_rasterize \
-    -a cell_cost \
-    -ot UInt16 \
-    -tr 30 30 \
-    -a_nodata 9999 \
-    -co COMPRESS=DEFLATE \
-    -co PREDICTOR=1 \
-    -co ZLEVEL=6 \
-    -at \
-    -init 0 \
-    -te 419967.47 4924223.79 521254.70 5029129.99 \
-    -l "generated"."bike_fac_costs_rails" \
-    "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
-    "${TEMPDIR}/cost_rails.tif" &
+if [ ! -e "${TEMPDIR}/cost_rails.tif" ] || [ ${OVERWRITE} -eq 1 ]; then
+    echo "Rasterizing railroads"
+    gdal_rasterize \
+        -a cell_cost \
+        -ot UInt16 \
+        -tr 30 30 \
+        -a_nodata 9999 \
+        -co COMPRESS=DEFLATE \
+        -co PREDICTOR=1 \
+        -co ZLEVEL=6 \
+        -at \
+        -init 0 \
+        -te 419967.47 4924223.79 521254.70 5029129.99 \
+        -l "generated"."bike_fac_costs_rails" \
+        "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
+        "${TEMPDIR}/cost_rails.tif" &
+    OVERWRITE=1     # ensure new dataset cascades through
+else
+    echo "${TEMPDIR}/cost_rails.tif -> skipping"
+fi
 
-echo "Rasterizing streams"
-gdal_rasterize \
-    -a cell_cost \
-    -ot UInt16 \
-    -tr 30 30 \
-    -a_nodata 9999 \
-    -co COMPRESS=DEFLATE \
-    -co PREDICTOR=1 \
-    -co ZLEVEL=6 \
-    -at \
-    -init 30 \
-    -te 419967.47 4924223.79 521254.70 5029129.99 \
-    -l "generated"."bike_fac_costs_streams" \
-    "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
-    "${TEMPDIR}/cost_streams.tif" &
+if [ ! -e "${TEMPDIR}/cost_streams.tif" ] || [ ${OVERWRITE} -eq 1 ]; then
+    echo "Rasterizing streams"
+    gdal_rasterize \
+        -a cell_cost \
+        -ot UInt16 \
+        -tr 30 30 \
+        -a_nodata 9999 \
+        -co COMPRESS=DEFLATE \
+        -co PREDICTOR=1 \
+        -co ZLEVEL=6 \
+        -at \
+        -init 30 \
+        -te 419967.47 4924223.79 521254.70 5029129.99 \
+        -l "generated"."bike_fac_costs_streams" \
+        "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
+        "${TEMPDIR}/cost_streams.tif" &
+    OVERWRITE=1     # ensure new dataset cascades through
+else
+    echo "${TEMPDIR}/cost_streams.tif -> skipping"
+fi
 
 wait
 
 # Combine costs
-echo "Creating composite cost layer"
-gdal_calc.py \
-    --calc "numpy.fmin(numpy.fmax(numpy.fmax(numpy.fmin(numpy.fmin(B,C),D),F),E),A)" \
-    --format GTiff \
-    --type UInt16 \
-    -A "${TEMPDIR}/cost_exist.tif" --A_band 1 \
-    -B "${TEMPDIR}/cost_plan.tif" --B_band 1 \
-    -C "${TEMPDIR}/cost_locals.tif" --C_band 1 \
-    -D "${TEMPDIR}/cost_streams.tif" --D_band 1 \
-    -E "${TEMPDIR}/cost_expys.tif" --E_band 1 \
-    -F "${TEMPDIR}/cost_rails.tif" --F_band 1 \
-    --outfile "${TEMPDIR}/cost_composite.tif"
+if [ ! -e "${TEMPDIR}/cost_composite.tif" ] || [ ${OVERWRITE} -eq 1 ]; then
+    echo "Creating composite cost layer"
+    gdal_calc.py \
+        --calc "numpy.fmin(numpy.fmax(numpy.fmax(numpy.fmin(numpy.fmin(B,C),D),F),E),A)" \
+        --format GTiff \
+        --type UInt16 \
+        -A "${TEMPDIR}/cost_exist.tif" --A_band 1 \
+        -B "${TEMPDIR}/cost_plan.tif" --B_band 1 \
+        -C "${TEMPDIR}/cost_locals.tif" --C_band 1 \
+        -D "${TEMPDIR}/cost_streams.tif" --D_band 1 \
+        -E "${TEMPDIR}/cost_expys.tif" --E_band 1 \
+        -F "${TEMPDIR}/cost_rails.tif" --F_band 1 \
+        --outfile "${TEMPDIR}/cost_composite.tif"
+    OVERWRITE=1     # ensure new dataset cascades through
+else
+    echo "${TEMPDIR}/cost_composite.tif -> skipping"
+fi
 
 # Create least-distance cost matrix for each point
 # first, we need to grab the data from the OD points
@@ -223,11 +258,33 @@ do
             -o "${TEMPDIR}/${TRACTIDS[index]}.tif" \
             -x "${XVALS[index]}" \
             -y "${YVALS[index]}"
+        echo "$index ${TRACTIDS[index]}"
     else
         echo "Found ${TEMPDIR}/${TRACTIDS[index]}.tif -> skipping"
     fi
+done
 
-    echo "$index ${array[index]}"
+for index1 in "${!XVALS[@]}"
+do
+    for index2 in "${!XVALS[@]}"
+    do
+        if [ ${TRACTIDS[index1]} -eq ${TRACTIDS[index2]} ]; then
+            :
+        elif ( [ ! -e "${TEMPDIR}/${TRACTIDS[index1]}-${TRACTIDS[index2]}.tif" ] \
+                && [ ! -e "${TEMPDIR}/${TRACTIDS[index2]}-${TRACTIDS[index1]}.tif" ] ) \
+                || [ ${OVERWRITE} -eq 1 ]; then
+            echo "Creating ${TEMPDIR}/${TRACTIDS[index1]}-${TRACTIDS[index2]}.tif"
+            python neighborhood-lcd.py \
+                --c1 "${TEMPDIR}/${TRACTIDS[index1]}.tif" \
+                --c2 "${TEMPDIR}/${TRACTIDS[index2]}.tif" \
+                -i 0 \
+                -r 5 \
+                -o "${TEMPDIR}/${TRACTIDS[index1]}-${TRACTIDS[index2]}.tif"
+            echo "$index1-$index2 ${TRACTIDS[index1]} >> ${TRACTIDS[index2]}"
+        else
+            echo "Found ${TEMPDIR}/${TRACTIDS[index1]}-${TRACTIDS[index2]}.tif -> skipping"
+        fi
+    done
 done
 
 # Delete temp dir

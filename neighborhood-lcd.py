@@ -1,6 +1,6 @@
 import sys, getopt, gdal, osr
 from skimage.morphology import disk
-from scipy.ndimage.filters import minimum_filter
+from scipy.ndimage.filters import minimum_filter, maximum_filter
 import numpy as np
 
 
@@ -10,6 +10,7 @@ def usage():
     print('-h [--help] - Display this guide')
     print('--c1 <cost raster file path> - Path to first cost raster')
     print('--c2 <cost raster file path> - Path to second cost raster')
+    print('-i [--improve] - Minimum improvement threshold')
     print('-r [--radius] - Search radius, given as number of pixels')
     print('-o [--output] <output file path> - Path to save output to')
     print('\n')
@@ -65,28 +66,9 @@ def array2raster(newRasterfn,rasterfn,array):
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "ho:r:",["help","c1=","c2=","radius="])
+        opts, args = getopt.getopt(argv, "ho:r:i:",["help","improve=","c1=","c2=","radius="])
     except getopt.GetoptError:
         usage()
-        sys.exit(2)
-
-    # check required flags
-    flags = [i[0] for i in opts]
-    if set(["-o","--output"]).isdisjoint(flags):
-        usage()
-        print('\n<< Hint: Missing output file parameter >>\n')
-        sys.exit(2)
-    if set(["-r","--radius"]).isdisjoint(flags):
-        usage()
-        print('\n<< Hint: Missing radius parameter >>\n')
-        sys.exit(2)
-    if '--c1' not in flags:
-        usage()
-        print('\n<< Hint: Missing cost raster input parameter >>\n')
-        sys.exit(2)
-    if '--c2' not in flags:
-        usage()
-        print('\n<< Hint: Missing cost raster input parameter >>\n')
         sys.exit(2)
 
     # declarations
@@ -94,12 +76,20 @@ def main(argv):
     CostSurfaceB = ''
     outputPathfn = ''
     inputRadius = int()
+    improvementThreshold = int()
 
     # parse options
     for opt, arg in opts:
         if opt in ("-h", "--help"):
             usage()
             sys.exit()
+        if opt in ("-i", "--improve"):
+            if not str.isdigit(arg): #isinstance( arg, (int, long) ):
+                print("Improvement threshold parameter requires an integer")
+                usage()
+                sys.exit(2)
+            else:
+                improvementThreshold = int(arg)
         elif opt in ("-o", "--output"):
             outputPathfn = arg
         elif opt in ("-r", "--radius"):
@@ -114,6 +104,29 @@ def main(argv):
         elif opt == "--c2":
             CostSurfaceB = arg
 
+    # check required flags
+    flags = [i[0] for i in opts]
+    if set(["-o","--output"]).isdisjoint(flags):
+        usage()
+        print('\n<< Hint: Missing output file parameter >>\n')
+        sys.exit(2)
+    if set(["-i","--improve"]).isdisjoint(flags):
+        usage()
+        print('\n<< Hint: Missing improvement threshold parameter >>\n')
+        sys.exit(2)
+    if set(["-r","--radius"]).isdisjoint(flags):
+        usage()
+        print('\n<< Hint: Missing radius parameter >>\n')
+        sys.exit(2)
+    if '--c1' not in flags:
+        usage()
+        print('\n<< Hint: Missing cost raster input parameter >>\n')
+        sys.exit(2)
+    if '--c2' not in flags:
+        usage()
+        print('\n<< Hint: Missing cost raster input parameter >>\n')
+        sys.exit(2)
+
     # create arrays from cost surface raster
     costSurfaceArrayA = raster2array(CostSurfaceA)
     costSurfaceArrayB = raster2array(CostSurfaceB)
@@ -123,6 +136,7 @@ def main(argv):
 
     # get shortest path cost
     existMinCost = np.amin(existMinCostArray)
+    print("Minimum existing cost: " + str(existMinCost))
 
     # get improved minimum cost
     minCostArrayA = costMinArray(costSurfaceArrayA,inputRadius)
@@ -130,28 +144,25 @@ def main(argv):
     imprvMinCostArray = np.add(       # add constant equal to 2xradius to represent new connection
         minCostArrayA,
         minCostArrayB,
-        np.full_like(minCostArrayA, 2 * inputRadius)
+        np.full_like(minCostArrayA, 2 * inputRadius*30)
     )
+    imprvMinCost = np.amin(imprvMinCostArray)
+    print("Minimum improved cost: " + str(imprvMinCost))
 
     # compare improved to previous shortes path
 
     # get ratio of improved to existing
     #benefit = np.divide(imprvMinCostArray,existMinCostArray)
-    benefit = np.maximum(
-        np.full_like(minCostArrayA, 0),
-        np.subtract(
-            imprvMinCostArray,
-            np.add(
-                minCostArrayA,
-                minCostArrayB
-            )
-        )
+    # benefit = np.where(imprvMinCostArray < (existMinCost - improvementThreshold), existMinCost - imprvMinCostArray, np.nan)
+    # benefit = np.where(imprvMinCostArray < (existMinCostArray - improvementThreshold), existMinCostArray - imprvMinCostArray, 0)
+    benefit = np.where(
+        imprvMinCostArray < np.full_like(minCostArrayA, existMinCost),
+        np.full_like(minCostArrayA, existMinCost) - imprvMinCostArray, 
+        0
     )
 
     # output new raster
     array2raster(outputPathfn,CostSurfaceA,benefit) # converts path array to raster
-    array2raster(outputPathfn[:-4]+"imp"+outputPathfn[-4:],CostSurfaceA,np.add(minCostArrayA,minCostArrayB)) # converts path array to raster
-    array2raster(outputPathfn[:-4]+"exst"+outputPathfn[-4:],CostSurfaceA,imprvMinCostArray) # converts path array to raster
 
 
 if __name__ == "__main__":
