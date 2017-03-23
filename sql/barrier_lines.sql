@@ -10,7 +10,9 @@ CREATE TABLE generated.barrier_lines (
     id SERIAL PRIMARY KEY,
     geom geometry(linestring,:db_srid),
     id_od_points1 INTEGER,
-    id_od_points2 INTEGER
+    id_od_points2 INTEGER,
+    cost_exist INTEGER,
+    cost_improved INTEGER
 );
 
 -- urban centers
