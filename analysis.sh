@@ -87,12 +87,22 @@ fi
 
 # First, create the vector cost layers and od_points
 if [ ${SKIPVECTOR} -eq 0 ]; then
+    echo "Running bike_fact_costs.sql"
     psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
         -v db_srid="${DBSRID}" \
-        -f bike_fac_costs.sql
+        -f sql/bike_fac_costs.sql
+    echo "Running od_points.sql"
     psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
         -v db_srid="${DBSRID}" \
-        -f od_points.sql
+        -f sql/od_points.sql
+    echo "Running barriers.sql"
+    psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
+        -v db_srid="${DBSRID}" \
+        -f sql/barriers.sql
+    echo "Running barrier_lines.sql"
+    psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
+        -v db_srid="${DBSRID}" \
+        -f sql/barrier_lines.sql
 fi
 
 # Rasterize
