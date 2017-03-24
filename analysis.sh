@@ -253,49 +253,15 @@ else
     echo "${TEMPDIR}/cost_composite.tif -> skipping"
 fi
 
-# Create least-distance cost matrix for each point
-# first, we need to grab the data from the OD points
-IFS=' ' read -r -a XVALS <<< `psql -d twin_cities_barriers -h 192.168.22.220 -U gis -c "SELECT ST_X(geom) FROM od_points ORDER BY id" -t`
-IFS=' ' read -r -a YVALS <<< `psql -d twin_cities_barriers -h 192.168.22.220 -U gis -c "SELECT ST_Y(geom) FROM od_points ORDER BY id" -t`
-IFS=' ' read -r -a TRACTIDS <<< `psql -d twin_cities_barriers -h 192.168.22.220 -U gis -c "SELECT geoid FROM od_points ORDER BY id" -t`
-
-for index in "${!XVALS[@]}"
-do
-    if [ ! -e "${TEMPDIR}/${TRACTIDS[index]}.tif" ] || [ ${OVERWRITE} -eq 1 ]; then
-        echo "Creating ${TEMPDIR}/${TRACTIDS[index]}.tif"
-        python cost.py \
-            -i "${TEMPDIR}/cost_composite.tif" \
-            -o "${TEMPDIR}/${TRACTIDS[index]}.tif" \
-            -x "${XVALS[index]}" \
-            -y "${YVALS[index]}"
-        echo "$index ${TRACTIDS[index]}"
-    else
-        echo "Found ${TEMPDIR}/${TRACTIDS[index]}.tif -> skipping"
-    fi
-done
-
-for index1 in "${!XVALS[@]}"
-do
-    for index2 in "${!XVALS[@]}"
-    do
-        if [ ${TRACTIDS[index1]} -eq ${TRACTIDS[index2]} ]; then
-            :
-        elif ( [ ! -e "${TEMPDIR}/${TRACTIDS[index1]}-${TRACTIDS[index2]}.tif" ] \
-                && [ ! -e "${TEMPDIR}/${TRACTIDS[index2]}-${TRACTIDS[index1]}.tif" ] ) \
-                || [ ${OVERWRITE} -eq 1 ]; then
-            echo "Creating ${TEMPDIR}/${TRACTIDS[index1]}-${TRACTIDS[index2]}.tif"
-            python neighborhood-lcd.py \
-                --c1 "${TEMPDIR}/${TRACTIDS[index1]}.tif" \
-                --c2 "${TEMPDIR}/${TRACTIDS[index2]}.tif" \
-                -i 0 \
-                -r 5 \
-                -o "${TEMPDIR}/${TRACTIDS[index1]}-${TRACTIDS[index2]}.tif"
-            echo "$index1-$index2 ${TRACTIDS[index1]} >> ${TRACTIDS[index2]}"
-        else
-            echo "Found ${TEMPDIR}/${TRACTIDS[index1]}-${TRACTIDS[index2]}.tif -> skipping"
-        fi
-    done
-done
+# Update the least cost distances for all features
+python py/cost.py \
+  -f "${TEMPDIR}/cost_composite.tif" \
+  -h 192.168.22.220 \
+  -d twin_cities_barriers \
+  -u gis \
+  -t barrier_lines \
+  -r 5 \
+  all
 
 # Delete temp dir
 if [ ${DEBUG} -ne 1 ]; then
