@@ -76,7 +76,7 @@ INSERT INTO generated.bike_fac_costs_expys (
     geom, cell_cost
 )
 SELECT  ST_Multi(ST_Force2D(geom)),
-        999
+        11111
 FROM    expy;
 
 -- insert railroads
@@ -84,7 +84,7 @@ INSERT INTO generated.bike_fac_costs_rails (
     geom, cell_cost
 )
 SELECT  ST_Force2D(geom),
-        999
+        11111
 FROM    osm_railroads;
 
 -- insert streams
@@ -92,7 +92,7 @@ INSERT INTO generated.bike_fac_costs_streams (
     geom, cell_cost
 )
 SELECT  ST_Force2D(geom),
-        999
+        11111
 FROM    streams
 WHERE   barrier > 0;    --include major rivers
 --WHERE   barrier = 1;    --restrict to Met approved streams
