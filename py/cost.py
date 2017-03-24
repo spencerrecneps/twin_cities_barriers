@@ -21,12 +21,7 @@ def usage():
     print('[-s] [--schema] <schema name> - Database schema')
     print('-t [--table] <table name> - Database table name')
     print('-r [--radius] <radius> - Search radius')
-    print('\n')
-    print('If "all" is specified the entire table is analyzed.')
-    print('IDs are given as unique identifiers for the database table.')
-    print('  A single feature can be processed or multiple ids may')
-    print('  be appended to process many features at once.')
-    print('  Note that ids must be given AFTER options.')
+    print('[-w] [--where] <SQL> - Valid SQL where clause (without WHERE at the start)')
     print('\n')
 
 def raster2array(rasterfn):
@@ -89,8 +84,8 @@ def main(argv):
     try:
         opts, args = getopt.getopt(
             argv,
-            "f:d:u:h:p:s:t:r:",
-            ["help","debug=","input=","database=","user=","host=","pass=","schema=","table=","radius="]
+            "f:d:u:h:p:s:t:r:w:",
+            ["help","debug=","input=","database=","user=","host=","pass=","schema=","table=","radius=","where="]
         )
     except getopt.GetoptError:
         print("Bad command line option")
@@ -107,8 +102,7 @@ def main(argv):
     schema=''
     table=''
     radius=int()
-    queryAll = False
-    testIds = []    # array to hold ids for testing crossings
+    where=''
 
     costSurfaceRaster = ''
     outputPathfn = ''
@@ -149,17 +143,8 @@ def main(argv):
                 radius = arg
             else:
                 print("Radius " + arg + "is not a number")
-
-    # parse arguments
-    for arg in args:
-        if arg == "all":
-            queryAll = True
-        elif str.isdigit(arg):
-            testIds.append(arg)
-        else:
-            usage()
-            print("Bad ID value")
-            sys.exit(2)
+        elif opt in ("-w", "--where"):
+            where = arg
 
     # check required flags
     flags = [i[0] for i in opts]
@@ -178,10 +163,6 @@ def main(argv):
     if set(["-r","--radius"]).isdisjoint(flags):
         usage()
         print('\n<< Hint: Missing radius parameter >>\n')
-        sys.exit(2)
-    if len(testIds) == 0 and not queryAll:
-        usage()
-        print('\n<< Hint: Missing IDs of "all" at the end >>\n')
         sys.exit(2)
 
     # connect to db
@@ -206,8 +187,9 @@ def main(argv):
                         ST_X(ST_EndPoint(geom)) AS x2, \
                         ST_Y(ST_EndPoint(geom)) AS y2 \
                 FROM    ' + fullTableName
-    if not queryAll:
-        query += ' WHERE id IN (' + ','.join(testIds) + ')'
+    if not where == '':
+        query += ' WHERE ' + where
+    query += ' ORDER BY ST_X(ST_StartPoint(geom)), ST_Y(ST_StartPoint(geom)) '
     query += ';'
     cur.execute(query)
 
@@ -215,6 +197,8 @@ def main(argv):
     costSurface = raster2array(costSurfaceRaster)
 
     # iterate over features and update crossing costs
+    currentIndex = None
+    currentLcd = None
     for record in cur:
         fid = record[0]
         coord1 = (record[1],record[2])
@@ -223,15 +207,19 @@ def main(argv):
         index2 = coord2pixelOffset(costSurfaceRaster,record[3],record[4])
 
         # check if points are on a barrier, skip if so
-        if debug:
-            print("origin/destination cost pixels")
-            print(str(costSurface[index1]) + " " + str(costSurface[index2]))
-        if costSurface[index1] >= 999 or costSurface[index2] >= 999:
-            print("Feature " + str(fid) + " is located on a barrier, skipping")
-            continue
+        # if debug:
+        #     print("origin/destination cost pixels")
+        #     print(str(costSurface[index1]) + " " + str(costSurface[index2]))
+        # if costSurface[index1] >= 999 or costSurface[index2] >= 999:
+        #     print("Feature " + str(fid) + " is located on a barrier, skipping")
+        #     continue
 
         # get least cost distances for both points
-        lcd1 = createLCD(costSurfaceRaster,costSurface,coord1)
+        if not currentIndex == index1:
+            print("New source feature")
+            currentIndex = index1
+            currentLcd = createLCD(costSurfaceRaster,costSurface,coord1)
+        lcd1 = currentLcd
         lcd2 = createLCD(costSurfaceRaster,costSurface,coord2)
 
         # get minimum existing distance

@@ -261,7 +261,7 @@ python py/cost.py \
   -u gis \
   -t barrier_lines \
   -r 5 \
-  all
+  -w "cost_improved IS NULL"
 
 # Delete temp dir
 if [ ${DEBUG} -ne 1 ]; then
