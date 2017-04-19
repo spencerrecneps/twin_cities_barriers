@@ -5,14 +5,20 @@
 ## Analysis study
 #############################################################
 
+cd "$(dirname "$0")"
+
+if [ -e ./project_setup.sh ]; then
+    source ./project_setup.sh
+fi
+
 # Set up
 DEBUG="${DEBUG:-0}"
-DBHOST="${DBHOST:-192.168.22.220}"
+DBHOST="${DBHOST:-localhost}"
 DBUSER="${DBUSER:-gis}"
 DBPASS="${DBPASS:-gis}"
 PGPASSWORD="${DBPASS}"
-DBNAME="${DBNAME:-twin_cities_barriers}"
-DBSRID="${DBSRID:-26915}"
+DBNAME="${DBNAME:-none}"
+DBSRID="${DBSRID:-4326}"
 SKIPVECTOR="${SKIPEVECTOR:-0}"
 TEMPDIR="${TEMPDIR:-none}"
 OVERWRITE="${OVERWRITE:-0}"
@@ -35,11 +41,11 @@ Additional arguments are:
 
 Optional ENV vars:
 
-DBHOST - Default: 192.168.22.220
+DBHOST - Default: localhost
 DBUSER - Default: gis
 DBPASS - Default: gis
-DBNAME - Default: twin_cities_barriers
-DBSRID - Default: 26915
+DBNAME - Default: none
+DBSRID - Default: 4326
 
 "
 }
