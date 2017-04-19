@@ -9,19 +9,23 @@ DBPASS="${DBPASS:-gis}"
 PGPASSWORD="${DBPASS}"
 DBNAME="${DBNAME:-none}"
 DBSRID="${DBSRID:-4326}"
+DEBUG=0
 
 function usage() {
     echo -n \
 "
-Usage: $(basename "$0") [-h] [-s] [-t] <raster file>
+Usage: $(basename "$0") [-h] [-d] [-u <limit>] [-l <limit>] -s <schema> -t <table> <raster file>
 
 Polygonize a raster and save to PostGIS database.
 
 Additional arguments are:
 
 -h - Display this help
--s [schema] - Schema to use in the database
--t [table] - Table name
+-d - Debug mode (doesn't delete temporary files)
+-u <limit> - Upper limit filter for the raster file
+-l <limit> - Lower limit filter for the raster file
+-s <schema> - Schema to use in the database
+-t <table> - Table name
 
 Optional ENV vars:
 
@@ -38,10 +42,12 @@ DBSRID - Default: 4326
 hasT=0
 hasL=0
 hasU=0
-while getopts "h?s:?t:u:l:" opt; do
+while getopts "h?d?s:?t:u:l:" opt; do
     case "$opt" in
     h)  usage
         exit 0
+        ;;
+    d)  DEBUG=1
         ;;
     s)  DBSCHEMA=${OPTARG}
         ;;
@@ -69,8 +75,12 @@ if [ ${hasT} -eq 0 ]; then
     exit 1
 fi
 shift $(($OPTIND - 1))
+
 # Set up temp directory
 TEMPDIR=`mktemp -d`
+if [ ${DEBUG} -eq 1 ]; then
+    echo "Saving files to ${TEMPDIR}"
+fi
 
 # set mask and polygonize
 if [ ${hasU} -eq 1 ] && [ ${hasL} -eq 1 ]; then
@@ -100,4 +110,6 @@ psql -h ${DBHOST} -d ${DBNAME} -U ${DBUSER} \
     -c "alter table \"${DBSCHEMA}\".\"${DBTABLE}\" drop column wkb_geometry;"
 
 # delete temp dir
-rm -rf "${TEMPDIR}"
+if [ ${DEBUG} -eq 0 ]; then
+    rm -rf "${TEMPDIR}"
+fi
