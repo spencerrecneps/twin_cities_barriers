@@ -10,6 +10,7 @@ DEBUG="${DEBUG:-0}"
 DBHOST="${DBHOST:-192.168.22.220}"
 DBUSER="${DBUSER:-gis}"
 DBPASS="${DBPASS:-gis}"
+PGPASSWORD="${DBPASS}"
 DBNAME="${DBNAME:-twin_cities_barriers}"
 DBSRID="${DBSRID:-26915}"
 SKIPVECTOR="${SKIPEVECTOR:-0}"
@@ -252,6 +253,39 @@ if [ ! -e "${TEMPDIR}/cost_composite.tif" ] || [ ${OVERWRITE} -eq 1 ]; then
 else
     echo "${TEMPDIR}/cost_composite.tif -> skipping"
 fi
+
+# Polygonize the cost results
+gdal_polygonize.py \
+    "${TEMPDIR}/cost_composite.tif" \
+    -f "PGDump" \
+    "${TEMPDIR}/pgdump.txt" \
+    "scratch.barrier_polys"
+
+psql \
+    -h ${DBHOST} \
+    -d ${DBNAME} \
+    -U ${DBUSER} \
+    -f "${TEMPDIR}/pgdump.txt"
+
+psql \
+    -h ${DBHOST} \
+    -d ${DBNAME} \
+    -U ${DBUSER} \
+    -c "alter table barrier_polys add column geom geometry(polygon,26915);"
+
+psql \
+    -h ${DBHOST} \
+    -d ${DBNAME} \
+    -U ${DBUSER} \
+    -c "update barrier_polys set geom = st_makevalid(st_makepolygon(st_exteriorring(wkb_geometry)));"
+
+# Generate lines from the polygons
+psql \
+    -h ${DBHOST} \
+    -d ${DBNAME} \
+    -U ${DBUSER} \
+    -v db_srid=${DBSRID} \
+    -f sql/barrier_lines.sql
 
 # Update the least cost distances for all features
 python py/cost.py \
