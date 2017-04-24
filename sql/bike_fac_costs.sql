@@ -6,45 +6,45 @@
 ------------------------------------------------------------
 -- create tables (we have to do separate tables for each input
 --   due to issue with the GDAL tool that we use)
-DROP TABLE IF EXISTS generated.bike_fac_costs_exist;
-DROP TABLE IF EXISTS generated.bike_fac_costs_plan;
-DROP TABLE IF EXISTS generated.bike_fac_costs_locals;
-DROP TABLE IF EXISTS generated.bike_fac_costs_expys;
-DROP TABLE IF EXISTS generated.bike_fac_costs_streams;
-DROP TABLE IF EXISTS generated.bike_fac_costs_rails;
-CREATE TABLE generated.bike_fac_costs_exist (
+DROP TABLE IF EXISTS automated.bike_fac_costs_exist;
+DROP TABLE IF EXISTS automated.bike_fac_costs_plan;
+DROP TABLE IF EXISTS automated.bike_fac_costs_locals;
+DROP TABLE IF EXISTS automated.bike_fac_costs_expys;
+DROP TABLE IF EXISTS automated.bike_fac_costs_streams;
+DROP TABLE IF EXISTS automated.bike_fac_costs_rails;
+CREATE TABLE automated.bike_fac_costs_exist (
     id SERIAL PRIMARY KEY,
     geom geometry(multilinestring,:db_srid),
     cell_cost INTEGER
 );
-CREATE TABLE generated.bike_fac_costs_plan (
+CREATE TABLE automated.bike_fac_costs_plan (
     id SERIAL PRIMARY KEY,
     geom geometry(multilinestring,:db_srid),
     cell_cost INTEGER
 );
-CREATE TABLE generated.bike_fac_costs_locals (
+CREATE TABLE automated.bike_fac_costs_locals (
     id SERIAL PRIMARY KEY,
     geom geometry(multilinestring,:db_srid),
     cell_cost INTEGER
 );
-CREATE TABLE generated.bike_fac_costs_expys (
+CREATE TABLE automated.bike_fac_costs_expys (
     id SERIAL PRIMARY KEY,
     geom geometry(multilinestring,:db_srid),
     cell_cost INTEGER
 );
-CREATE TABLE generated.bike_fac_costs_streams (
+CREATE TABLE automated.bike_fac_costs_streams (
     id SERIAL PRIMARY KEY,
     geom geometry(multilinestring,:db_srid),
     cell_cost INTEGER
 );
-CREATE TABLE generated.bike_fac_costs_rails(
+CREATE TABLE automated.bike_fac_costs_rails(
     id SERIAL PRIMARY KEY,
     geom geometry(multilinestring,:db_srid),
     cell_cost INTEGER
 );
 
 -- insert existing
-INSERT INTO generated.bike_fac_costs_exist (
+INSERT INTO automated.bike_fac_costs_exist (
     geom, cell_cost
 )
 --SELECT  ST_Multi(ST_Buffer(ST_Buffer(geom,7,'endcap=flat'),1)),
@@ -54,7 +54,7 @@ FROM    bikeways_rbtn
 WHERE   regstat = 1;
 
 -- insert planned
-INSERT INTO generated.bike_fac_costs_plan (
+INSERT INTO automated.bike_fac_costs_plan (
     geom, cell_cost
 )
 SELECT  ST_Force2D(geom),
@@ -63,7 +63,7 @@ FROM    bikeways_rbtn
 WHERE   regstat IN (2,3);
 
 -- insert locals
-INSERT INTO generated.bike_fac_costs_locals (
+INSERT INTO automated.bike_fac_costs_locals (
     geom, cell_cost
 )
 SELECT  ST_Force2D(geom),
@@ -72,7 +72,7 @@ FROM    roads_metro
 WHERE   f_class = 'A40';        -- need to determine how to define "local" road, assume A40 for now
 
 -- insert expressways
-INSERT INTO generated.bike_fac_costs_expys (
+INSERT INTO automated.bike_fac_costs_expys (
     geom, cell_cost
 )
 SELECT  ST_Multi(ST_Force2D(geom)),
@@ -80,7 +80,7 @@ SELECT  ST_Multi(ST_Force2D(geom)),
 FROM    expy;
 
 -- insert railroads
-INSERT INTO generated.bike_fac_costs_rails (
+INSERT INTO automated.bike_fac_costs_rails (
     geom, cell_cost
 )
 SELECT  ST_Force2D(geom),
@@ -88,7 +88,7 @@ SELECT  ST_Force2D(geom),
 FROM    osm_railroads;
 
 -- insert streams
-INSERT INTO generated.bike_fac_costs_streams (
+INSERT INTO automated.bike_fac_costs_streams (
     geom, cell_cost
 )
 SELECT  ST_Force2D(geom),
@@ -98,18 +98,18 @@ WHERE   barrier > 0;    --include major rivers
 --WHERE   barrier = 1;    --restrict to Met approved streams
 
 -- indexes
-CREATE INDEX sidx_bkfaccostex_geom ON generated.bike_fac_costs_exist USING GIST (geom);
-ANALYZE generated.bike_fac_costs_exist;
-CREATE INDEX sidx_bkfaccostpl_geom ON generated.bike_fac_costs_plan USING GIST (geom);
-ANALYZE generated.bike_fac_costs_plan;
-CREATE INDEX sidx_bkfaccostlo_geom ON generated.bike_fac_costs_locals USING GIST (geom);
-ANALYZE generated.bike_fac_costs_locals;
-CREATE INDEX sidx_bkfaccostxp_geom ON generated.bike_fac_costs_expys USING GIST (geom);
-ANALYZE generated.bike_fac_costs_locals;
-CREATE INDEX sidx_bkfaccostrr_geom ON generated.bike_fac_costs_rails USING GIST (geom);
-ANALYZE generated.bike_fac_costs_locals;
-CREATE INDEX sidx_bkfaccostst_geom ON generated.bike_fac_costs_streams USING GIST (geom);
-ANALYZE generated.bike_fac_costs_locals;
+CREATE INDEX sidx_bkfaccostex_geom ON automated.bike_fac_costs_exist USING GIST (geom);
+ANALYZE automated.bike_fac_costs_exist;
+CREATE INDEX sidx_bkfaccostpl_geom ON automated.bike_fac_costs_plan USING GIST (geom);
+ANALYZE automated.bike_fac_costs_plan;
+CREATE INDEX sidx_bkfaccostlo_geom ON automated.bike_fac_costs_locals USING GIST (geom);
+ANALYZE automated.bike_fac_costs_locals;
+CREATE INDEX sidx_bkfaccostxp_geom ON automated.bike_fac_costs_expys USING GIST (geom);
+ANALYZE automated.bike_fac_costs_locals;
+CREATE INDEX sidx_bkfaccostrr_geom ON automated.bike_fac_costs_rails USING GIST (geom);
+ANALYZE automated.bike_fac_costs_locals;
+CREATE INDEX sidx_bkfaccostst_geom ON automated.bike_fac_costs_streams USING GIST (geom);
+ANALYZE automated.bike_fac_costs_locals;
 --
 --
 --
@@ -129,14 +129,14 @@ ANALYZE generated.bike_fac_costs_locals;
 --
 --
 -- -- add polygons
--- INSERT INTO generated.bike_fac_costs (geom, fac_type, cell_cost)
+-- INSERT INTO automated.bike_fac_costs (geom, fac_type, cell_cost)
 -- SELECT  ST_Buffer(ST_Union(ST_Buffer(geom,5,'endcap=flat')),3),
 --
 --
 --
 -- -- (inspired by
 -- -- http://gis.stackexchange.com/questions/83/separate-polygons-based-on-intersection-using-postgis )
--- INSERT INTO generated.bike_fac_costs (geom)
+-- INSERT INTO automated.bike_fac_costs (geom)
 -- SELECT  geom
 -- FROM    ST_Dump(
 --             (

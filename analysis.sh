@@ -126,7 +126,7 @@ if [ ! -e "${TEMPDIR}/cost_exist.tif" ] || [ ${OVERWRITE} -eq 1 ]; then
         -at \
         -init 100000 \
         -te 419967.47 4924223.79 521254.70 5029129.99 \
-        -l "generated"."bike_fac_costs_exist" \
+        -l "automated"."bike_fac_costs_exist" \
         "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
         "${TEMPDIR}/cost_exist.tif" &
     OVERWRITE=1     # ensure new dataset cascades through
@@ -147,7 +147,7 @@ if [ ! -e "${TEMPDIR}/cost_plan.tif" ] || [ ${OVERWRITE} -eq 1 ]; then
         -at \
         -init 100000 \
         -te 419967.47 4924223.79 521254.70 5029129.99 \
-        -l "generated"."bike_fac_costs_plan" \
+        -l "automated"."bike_fac_costs_plan" \
         "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
         "${TEMPDIR}/cost_plan.tif" &
     OVERWRITE=1     # ensure new dataset cascades through
@@ -168,7 +168,7 @@ if [ ! -e "${TEMPDIR}/cost_locals.tif" ] || [ ${OVERWRITE} -eq 1 ]; then
         -at \
         -init 100000 \
         -te 419967.47 4924223.79 521254.70 5029129.99 \
-        -l "generated"."bike_fac_costs_locals" \
+        -l "automated"."bike_fac_costs_locals" \
         "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
         "${TEMPDIR}/cost_locals.tif" &
     OVERWRITE=1     # ensure new dataset cascades through
@@ -189,7 +189,7 @@ if [ ! -e "${TEMPDIR}/cost_expys.tif" ] || [ ${OVERWRITE} -eq 1 ]; then
         -at \
         -init 0 \
         -te 419967.47 4924223.79 521254.70 5029129.99 \
-        -l "generated"."bike_fac_costs_expys" \
+        -l "automated"."bike_fac_costs_expys" \
         "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
         "${TEMPDIR}/cost_expys.tif" &
     OVERWRITE=1     # ensure new dataset cascades through
@@ -210,7 +210,7 @@ if [ ! -e "${TEMPDIR}/cost_rails.tif" ] || [ ${OVERWRITE} -eq 1 ]; then
         -at \
         -init 0 \
         -te 419967.47 4924223.79 521254.70 5029129.99 \
-        -l "generated"."bike_fac_costs_rails" \
+        -l "automated"."bike_fac_costs_rails" \
         "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
         "${TEMPDIR}/cost_rails.tif" &
     OVERWRITE=1     # ensure new dataset cascades through
@@ -231,7 +231,7 @@ if [ ! -e "${TEMPDIR}/cost_streams.tif" ] || [ ${OVERWRITE} -eq 1 ]; then
         -at \
         -init 30 \
         -te 419967.47 4924223.79 521254.70 5029129.99 \
-        -l "generated"."bike_fac_costs_streams" \
+        -l "automated"."bike_fac_costs_streams" \
         "PG:dbname='${DBNAME}' host='${DBHOST}' port=5432 user='${DBUSER}' password='${DBPASS}' sslmode=disable" \
         "${TEMPDIR}/cost_streams.tif" &
     OVERWRITE=1     # ensure new dataset cascades through

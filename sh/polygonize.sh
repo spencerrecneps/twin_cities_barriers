@@ -105,7 +105,7 @@ psql -h ${DBHOST} -d ${DBNAME} -U ${DBUSER} -f "${TEMPDIR}/o.txt"
 psql -h ${DBHOST} -d ${DBNAME} -U ${DBUSER} \
     -c "alter table \"${DBSCHEMA}\".\"${DBTABLE}\" add column geom geometry(polygon,${DBSRID});"
 psql -h ${DBHOST} -d ${DBNAME} -U ${DBUSER} \
-    -c "update \"${DBSCHEMA}\".\"${DBTABLE}\" set geom = st_makepolygon(st_exteriorring(wkb_geometry));"
+    -c "update \"${DBSCHEMA}\".\"${DBTABLE}\" set geom = st_makevalid(st_makepolygon(st_exteriorring(wkb_geometry)));"
 psql -h ${DBHOST} -d ${DBNAME} -U ${DBUSER} \
     -c "alter table \"${DBSCHEMA}\".\"${DBTABLE}\" drop column wkb_geometry;"
 

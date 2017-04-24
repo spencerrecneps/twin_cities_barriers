@@ -6,15 +6,17 @@
 ------------------------------------------------------------
 -- create table
 DROP TABLE IF EXISTS barrier_lines;
-CREATE TABLE generated.barrier_lines (
+CREATE TABLE automated.barrier_lines (
     id SERIAL PRIMARY KEY,
     geom geometry(multilinestring,:db_srid)
 );
 
-INSERT INTO generated.barrier_lines (geom)
+INSERT INTO automated.barrier_lines (geom)
 SELECT ST_ApproximateMedialAxis(geom)
 FROM scratch.barrier_polys;
 
+UPDATE
+
 -- index
-CREATE INDEX sidx_barrier_lines_geom ON generated.barrier_lines USING GIST (geom);
-ANALYZE generated.barrier_lines;
+CREATE INDEX sidx_barrier_lines_geom ON automated.barrier_lines USING GIST (geom);
+ANALYZE automated.barrier_lines;

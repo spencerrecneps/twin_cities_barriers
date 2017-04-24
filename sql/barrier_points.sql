@@ -6,7 +6,7 @@
 ------------------------------------------------------------
 -- create table
 DROP TABLE IF EXISTS barrier_points;
-CREATE TABLE generated.barrier_points (
+CREATE TABLE automated.barrier_points (
     id SERIAL PRIMARY KEY,
     geom geometry(point,:db_srid)
 );
@@ -22,7 +22,7 @@ WITH all_barriers AS (
             OR  (bl.cost_exist < 500 AND bl.cost_improved::FLOAT / bl.cost_exist < 0.5)
             )
 )
-INSERT INTO generated.barrier_points (geom)
+INSERT INTO automated.barrier_points (geom)
 SELECT  ST_Centroid(
             unnest(
                 ST_ClusterWithin(

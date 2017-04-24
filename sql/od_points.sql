@@ -6,7 +6,7 @@
 ------------------------------------------------------------
 -- create table
 DROP TABLE IF EXISTS od_points;
-CREATE TABLE generated.od_points (
+CREATE TABLE automated.od_points (
     id SERIAL PRIMARY KEY,
     geom geometry(point,:db_srid),
     community TEXT
@@ -26,8 +26,8 @@ WHERE   EXISTS (
         );
 
 -- index
-CREATE INDEX sidx_od_points_geom ON generated.od_points USING GIST (geom);
-ANALYZE generated.od_points (geom);
+CREATE INDEX sidx_od_points_geom ON automated.od_points USING GIST (geom);
+ANALYZE automated.od_points (geom);
 
 -- insert points from urban
 INSERT INTO od_points (geom, community)
@@ -47,7 +47,7 @@ AND     NOT EXISTS (
             WHERE   ST_Intersects(g.geom,p.geom)
             AND     ST_DWithin(ST_Centroid(g.geom),p.geom,403)  -- 403m ~ 1/4 mi
         );
-ANALYZE generated.od_points (geom);
+ANALYZE automated.od_points (geom);
 
 -- insert points from suburban
 INSERT INTO od_points (geom, community)
@@ -67,7 +67,7 @@ AND     NOT EXISTS (
             WHERE   ST_Intersects(g.geom,p.geom)
             AND     ST_DWithin(ST_Centroid(g.geom),p.geom,606)  -- 606m ~ 3/8 mi
         );
-ANALYZE generated.od_points (geom);
+ANALYZE automated.od_points (geom);
 
 -- insert points from rural
 INSERT INTO od_points (geom, community)
@@ -89,5 +89,5 @@ AND     NOT EXISTS (
         );
 
 -- index
-CREATE INDEX idx_od_points_community ON generated.od_points (community);
-ANALYZE generated.od_points;
+CREATE INDEX idx_od_points_community ON automated.od_points (community);
+ANALYZE automated.od_points;
