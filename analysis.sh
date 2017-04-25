@@ -261,29 +261,11 @@ else
 fi
 
 # Polygonize the cost results
-gdal_polygonize.py \
-    "${TEMPDIR}/cost_composite.tif" \
-    -f "PGDump" \
-    "${TEMPDIR}/pgdump.txt" \
-    "scratch.barrier_polys"
-
-psql \
-    -h ${DBHOST} \
-    -d ${DBNAME} \
-    -U ${DBUSER} \
-    -f "${TEMPDIR}/pgdump.txt"
-
-psql \
-    -h ${DBHOST} \
-    -d ${DBNAME} \
-    -U ${DBUSER} \
-    -c "alter table barrier_polys add column geom geometry(polygon,26915);"
-
-psql \
-    -h ${DBHOST} \
-    -d ${DBNAME} \
-    -U ${DBUSER} \
-    -c "update barrier_polys set geom = st_makevalid(st_makepolygon(st_exteriorring(wkb_geometry)));"
+sh/polygonize.sh \
+    -s scratch \
+    -t barrier_polys_raw \
+    -l 11110 \
+    "${TEMPDIR}/cost_composite.tif"
 
 # Generate lines from the polygons
 psql \

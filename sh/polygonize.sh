@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # can source vars from externally via
-# source ../project_setup.sh && ./polygonize.sh -s scratch -t barrier_polys -l 11110 ~/gis/twin_cities_barriers/cost_composite.tif
+# source ../project_setup.sh && ./polygonize.sh -s scratch -t barrier_polys_raw -l 11110 ~/gis/twin_cities_barriers/cost_composite.tif
 
 DBHOST="${DBHOST:-localhost}"
 DBUSER="${DBUSER:-gis}"
