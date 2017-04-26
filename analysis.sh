@@ -263,7 +263,7 @@ fi
 # Polygonize the cost results
 sh/polygonize.sh \
     -s scratch \
-    -t barrier_polys_raw \
+    -t barrier_polys \
     -l 11110 \
     "${TEMPDIR}/cost_composite.tif"
 
