@@ -19,14 +19,27 @@ CREATE TABLE automated.barrier_lines (
     geom geometry(multilinestring,:db_srid)
 );
 
--- INSERT INTO automated.barrier_lines (geom)
--- SELECT ST_ApproximateMedialAxis(geom)
--- FROM scratch.barrier_polys;
+INSERT INTO automated.barrier_lines (geom)
+SELECT ST_ApproximateMedialAxis(geom)
+FROM scratch.barrier_polys_raw;
 
+-- index
+CREATE INDEX sidx_barrier_lines_geom ON automated.barrier_lines USING GIST (geom);
+ANALYZE automated.barrier_lines;
+
+-- connect diagonal cells
+INSERT INTO automated.barrier_lines (geom)
+SELECT  ST_Multi(ST_MakeLine(
+            ST_ClosestPoint(a.geom,b.geom),
+            ST_ClosestPoint(b.geom,a.geom)
+        ))
+FROM    automated.barrier_lines a, automated.barrier_lines b
+WHERE   a.id != b.id
+AND     ST_DWithin(a.geom,b.geom,43);   -- 43 is the diagonal length of a 30x30 cell
 
 INSERT INTO scratch.barrier_pointsdump (feat, pt, geom)
 SELECT (dump).path[1], (dump).path[2], (dump).geom
-FROM (SELECT ST_DumpPoints(ST_ApproximateMedialAxis(geom)) AS dump FROM scratch.barrier_polys) a;
+FROM (SELECT ST_DumpPoints(ST_ApproximateMedialAxis(geom)) AS dump FROM scratch.barrier_polys LIMIT 2000) a;
 
 CREATE INDEX sidx_barrier_pointsdump ON scratch.barrier_pointsdump USING GIST (geom);
 ANALYZE scratch.barrier_pointsdump;
@@ -61,6 +74,3 @@ ANALYZE scratch.barrier_pointsdump;
 --
 --
 --
--- -- index
--- CREATE INDEX sidx_barrier_lines_geom ON automated.barrier_lines USING GIST (geom);
--- ANALYZE automated.barrier_lines;
