@@ -322,6 +322,7 @@ psql \
     --quiet \
     | while read FID ; do
         echo "id: ${FID}"
+        # gdal_translate -of GTiff -projwin 440607.3 4960659.3 442677.668 4958370.65 ~/gis/twin_cities_barriers/cost_composite.tif ~/gis/twin_cities_barriers/translate.tif
         gdalwarp \
             -of GTiff \
             -overwrite \
