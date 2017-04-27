@@ -11,21 +11,10 @@ CREATE TABLE scratch.barrier_lines_raw (
     geom geometry(multilinestring,:db_srid)
 );
 
-DROP TABLE IF EXISTS scratch.barrier_pointsdump;
-CREATE TABLE scratch.barrier_pointsdump (
-    id SERIAL PRIMARY KEY,
-    rawid INTEGER,
-    feat INTEGER,
-    pt INTEGER,
-    geom geometry(point,:db_srid)
-);
-
-
-
 DROP TABLE IF EXISTS automated.barrier_lines;
 CREATE TABLE automated.barrier_lines (
     id SERIAL PRIMARY KEY,
-    geom geometry(multilinestring,:db_srid)
+    geom geometry(linestring,:db_srid)
 );
 
 -- read barrier polys
@@ -76,54 +65,10 @@ WHERE   a.id != b.id
 AND     a.id > b.id
 AND     ST_DWithin(a.geom,b.geom,ceil(sqrt(30^2+30^2)));   -- the diagonal length of a 30x30 cell
 
--- dump points
-INSERT INTO scratch.barrier_pointsdump (rawid, feat, pt, geom)
-SELECT id, (dump).path[1], (dump).path[2], (dump).geom
-FROM (SELECT id, ST_DumpPoints(geom) AS dump FROM scratch.barrier_lines_raw) a;
+-- break up at intersections and stitch together adjacent lines
+INSERT INTO automated.barrier_lines (geom)
+SELECT  (ST_Dump(ST_LineMerge(ST_Node(geom)))).geom
+FROM    (SELECT ST_Union(geom) AS geom FROM scratch.barrier_lines_raw) a;
 
-CREATE INDEX sidx_barrier_pointsdump ON scratch.barrier_pointsdump USING GIST (geom);
-ANALYZE scratch.barrier_pointsdump;
-
-
-
---
-DROP TABLE IF EXISTS scratch.linemerge;
-CREATE TABLE scratch.linemerge (
-    id SERIAL PRIMARY KEY,
-    geom geometry(multilinestring,26915)
-);
-insert into linemerge (geom)
-select st_multi(st_collectionextract(st_linemerge(geom),2))
-from barrier_lines_raw
-
-
--- build lines
-WITH RECURSIVE pts AS (
-    SELECT  id, id AS base_id, 1 AS ord, feat, pt, geom
-    FROM    barrier_pointsdump
-    UNION
-    SELECT  b.id, p.base_id, p.ord + 1, b.feat, b.pt, b.geom
-    FROM    barrier_pointsdump b,
-            pts p
-    WHERE   NOT EXISTS (
-                SELECT  1
-                FROM    pts p2
-                WHERE   b.geom = p2.geom
-            )
-)
-SELECT * FROM pts;
---
---
---
---
---
--- INSERT INTO automated.barrier_lines (geom)
---
--- from
--- (select id, st_dumppoints(geom) as geom from barrier_lines limit 100) a
---
---
---
---
---
---
+-- drop raw table
+DROP TABLE IF EXISTS scratch.barrier_lines_raw;
