@@ -20,7 +20,7 @@ CREATE TABLE automated.barrier_lines (
 -- read barrier polys
 INSERT INTO scratch.barrier_lines_raw (geom)
 SELECT ST_ApproximateMedialAxis(geom)
-FROM scratch.barrier_polys;
+FROM automated.barrier_polys;
 
 -- index
 CREATE INDEX sidx_barrier_lines_geom ON scratch.barrier_lines_raw USING GIST (geom);
@@ -32,7 +32,7 @@ SELECT  ST_Multi(ST_MakeLine(
             ST_Centroid(a.geom),
             ST_Centroid(b.geom)
         ))
-FROM    scratch.barrier_polys a, scratch.barrier_polys b
+FROM    automated.barrier_polys a, automated.barrier_polys b
 WHERE   a.ogc_fid != b.ogc_fid
 AND     a.ogc_fid > b.ogc_fid
 AND     ST_DWithin(a.geom,b.geom,5)
@@ -45,7 +45,7 @@ SELECT  ST_Multi(ST_MakeLine(
             ST_Centroid(a.geom),
             ST_ClosestPoint(b.geom,a.geom)
         ))
-FROM    scratch.barrier_polys a, scratch.barrier_lines_raw b
+FROM    automated.barrier_polys a, scratch.barrier_lines_raw b
 WHERE   NOT EXISTS (
             SELECT  1
             FROM    scratch.barrier_lines_raw r
@@ -70,5 +70,9 @@ INSERT INTO automated.barrier_lines (geom)
 SELECT  (ST_Dump(ST_LineMerge(ST_Node(geom)))).geom
 FROM    (SELECT ST_Union(geom) AS geom FROM scratch.barrier_lines_raw) a;
 
+-- index
+CREATE INDEX sidx_barrier_lines ON automated.barrier_lines USING GIST (geom);
+
 -- drop raw table
 DROP TABLE IF EXISTS scratch.barrier_lines_raw;
+VACUUM ANALYZE;

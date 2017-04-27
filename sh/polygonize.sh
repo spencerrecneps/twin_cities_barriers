@@ -107,6 +107,8 @@ psql -h ${DBHOST} -d ${DBNAME} -U ${DBUSER} \
 psql -h ${DBHOST} -d ${DBNAME} -U ${DBUSER} \
     -c "update \"${DBSCHEMA}\".\"${DBTABLE}\" set geom = st_makevalid(st_makepolygon(st_exteriorring(wkb_geometry)));"
 psql -h ${DBHOST} -d ${DBNAME} -U ${DBUSER} \
+    -c "update \"${DBSCHEMA}\".\"${DBTABLE}\" set geom = st_makevalid(st_makepolygon(st_exteriorring(geom)));"
+psql -h ${DBHOST} -d ${DBNAME} -U ${DBUSER} \
     -c "alter table \"${DBSCHEMA}\".\"${DBTABLE}\" drop column wkb_geometry;"
 
 # delete temp dir

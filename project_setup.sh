@@ -5,3 +5,6 @@ export DBUSER="${DBUSER:-gis}"
 export DBPASS="${DBPASS:-gis}"
 export DBNAME="${DBNAME:-twin_cities_barriers}"
 export DBSRID="${DBSRID:-26915}"
+
+export BARRIERDIST=300
+export TESTLINELENGTH=300

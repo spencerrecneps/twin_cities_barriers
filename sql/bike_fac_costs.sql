@@ -48,7 +48,7 @@ INSERT INTO automated.bike_fac_costs_exist (
     geom, cell_cost
 )
 --SELECT  ST_Multi(ST_Buffer(ST_Buffer(geom,7,'endcap=flat'),1)),
-SELECT  ST_Force2D(geom),
+SELECT  ST_Multi(ST_Force2D(geom)),
         1
 FROM    bikeways_rbtn
 WHERE   regstat = 1;
@@ -57,7 +57,7 @@ WHERE   regstat = 1;
 INSERT INTO automated.bike_fac_costs_plan (
     geom, cell_cost
 )
-SELECT  ST_Force2D(geom),
+SELECT  ST_Multi(ST_Force2D(geom)),
         2
 FROM    bikeways_rbtn
 WHERE   regstat IN (2,3);
@@ -66,7 +66,7 @@ WHERE   regstat IN (2,3);
 INSERT INTO automated.bike_fac_costs_locals (
     geom, cell_cost
 )
-SELECT  ST_Force2D(geom),
+SELECT  ST_Multi(ST_Force2D(geom)),
         4
 FROM    roads_metro
 WHERE   f_class = 'A40';        -- need to determine how to define "local" road, assume A40 for now
@@ -83,7 +83,7 @@ FROM    expy;
 INSERT INTO automated.bike_fac_costs_rails (
     geom, cell_cost
 )
-SELECT  ST_Force2D(geom),
+SELECT  ST_Multi(ST_Force2D(geom)),
         11111
 FROM    osm_railroads;
 
@@ -91,7 +91,7 @@ FROM    osm_railroads;
 INSERT INTO automated.bike_fac_costs_streams (
     geom, cell_cost
 )
-SELECT  ST_Force2D(geom),
+SELECT  ST_Multi(ST_Force2D(geom)),
         11111
 FROM    streams
 WHERE   barrier > 0;    --include major rivers

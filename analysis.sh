@@ -23,6 +23,10 @@ SKIPVECTOR="${SKIPEVECTOR:-0}"
 TEMPDIR="${TEMPDIR:-none}"
 OVERWRITE="${OVERWRITE:-0}"
 
+# Analysis inputs
+BARRIERDIST="${BARRIERDIST:-300}"
+TESTLINELENGTH="${TESTLINELENGTH:-300}"
+
 function usage() {
     echo -n \
 "
@@ -92,24 +96,16 @@ if [ ${TEMPDIR} = 'none' ]; then
     fi
 fi
 
-# First, create the vector cost layers and od_points
+# Create the vector cost layers
 if [ ${SKIPVECTOR} -eq 0 ]; then
     echo "Running bike_fact_costs.sql"
     psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
         -v db_srid="${DBSRID}" \
         -f sql/bike_fac_costs.sql
-    echo "Running od_points.sql"
-    psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
-        -v db_srid="${DBSRID}" \
-        -f sql/od_points.sql
     echo "Running barriers.sql"
     psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
         -v db_srid="${DBSRID}" \
         -f sql/barriers.sql
-    echo "Running barrier_lines.sql"
-    psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
-        -v db_srid="${DBSRID}" \
-        -f sql/barrier_lines.sql
 fi
 
 # Rasterize
@@ -261,13 +257,15 @@ else
 fi
 
 # Polygonize the cost results
+echo 'Making polygons from barriers with polygonize.sh'
 sh/polygonize.sh \
-    -s scratch \
+    -s automated \
     -t barrier_polys \
     -l 11110 \
     "${TEMPDIR}/cost_composite.tif"
 
 # Generate lines from the polygons
+echo 'Running barrier_lines.sql'
 psql \
     -h ${DBHOST} \
     -d ${DBNAME} \
@@ -275,13 +273,25 @@ psql \
     -v db_srid=${DBSRID} \
     -f sql/barrier_lines.sql
 
+# Create test locations
+echo 'Running barrier_deviation_test_lines.sql'
+psql \
+    -h ${DBHOST} \
+    -d ${DBNAME} \
+    -U ${DBUSER} \
+    -v db_srid=${DBSRID} \
+    -v max_dist=${BARRIERDIST} \
+    -v line_len=${TESTLINELENGTH} \
+    -f sql/barrier_deviation_test_lines.sql
+
 # Update the least cost distances for all features
+echo 'Setting least cost distances for features with cost.py'
 python py/cost.py \
   -f "${TEMPDIR}/cost_composite.tif" \
   -h 192.168.22.220 \
   -d twin_cities_barriers \
   -u gis \
-  -t barrier_lines \
+  -t barrier_deviation_test_lines \
   -r 5 \
   -w "cost_improved IS NULL"
 
