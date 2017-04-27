@@ -26,7 +26,8 @@ SELECT  ST_LineSubstring(
         ) AS geom
 FROM    automated.barrier_lines,
         generate_series(0,floor(ST_Length(geom))::int,:max_dist) i
-WHERE   i < ST_Length(geom);
+WHERE   i < ST_Length(geom)
+AND     ST_Length(geom) - i > :max_dist;
 
 DROP TABLE IF EXISTS scratch.tmp_pts;
 CREATE TABLE scratch.tmp_pts (id SERIAL PRIMARY KEY, geom geometry(point,:db_srid), azi FLOAT);
