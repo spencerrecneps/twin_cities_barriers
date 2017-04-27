@@ -106,7 +106,7 @@ if [ ${TEMPDIR} = 'none' ]; then
 fi
 
 # Create the vector cost layers
-if [ ${SKIPVECTOR} -eq 0 -a ${COSTONLY} -eq 0 ]; then
+if [ ${SKIPVECTOR} -eq 0 ] && [ ${COSTONLY} -eq 0 ]; then
     echo "Running bike_fact_costs.sql"
     psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
         -v db_srid="${DBSRID}" \
