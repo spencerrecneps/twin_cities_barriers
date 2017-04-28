@@ -58,4 +58,3 @@ CREATE INDEX sidx_barrier_crossings ON automated.barrier_crossings USING GIST (g
 
 -- drop table
 DROP TABLE IF EXISTS automated.barrier_polys_merged;
-VACUUM ANALYZE;
