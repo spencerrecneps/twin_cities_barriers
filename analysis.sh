@@ -20,8 +20,9 @@ PGPASSWORD="${DBPASS}"
 DBNAME="${DBNAME:-none}"
 DBSRID="${DBSRID:-4326}"
 DBWHERE="${DBWHERE:-none}"
-COSTONLY="${COSTONLY:-0}"
-SKIPVECTOR="${SKIPEVECTOR:-0}"
+SKIPVECTOR="${SKIPVECTOR:-0}"
+SKIPCOST="${SKIPCOST:-0}"
+SKIPRASTER="${SKIPRASTER:-0}"
 TEMPDIR="${TEMPDIR:-none}"
 OVERWRITE="${OVERWRITE:-0}"
 
@@ -33,20 +34,19 @@ ROUTESEARCHDIST="${ROUTESEARCHDIST:-1000}"
 function usage() {
     echo -n \
 "
-Usage: $(basename "$0") [-h] [-c] [-v] [-d] [-w] [-f <folder location>] -o <folder location>
+Usage: $(basename "$0") [options]
 
 Run the Twin Cities Barriers analysis
 
 Additional arguments are:
 
 -h - Display this help
--c - Only run the cost portion of the analysis
 -v - Skip re-creation of the vector files in the database
--d - Run in debug mode (doesn't delete temporary files)
+-r - Skip raster file creation
+-c - Skip the cost portion of the analysis
+-d [folder location] - Run in debug mode (doesn't delete temporary files)
 -w - Overwrite any existing files
 -s - SQL where clause to filter barrier test features (given without WHERE)
--f - Output folder to store intermediate files (if not given a temporary folder is used)
--o - Output folder to store final files
 
 Optional ENV vars:
 
@@ -60,26 +60,23 @@ DBSRID - Default: 4326
 }
 
 # Parse the command line options
-hasO=0
-while getopts "h?c?v?d?s:?f:?o:w" opt; do
+while getopts "h?c?v?r?d:?s:?w?" opt; do
     case "$opt" in
     h)  usage
         exit 0
         ;;
-    c)  COSTONLY=1
+    c)  SKIPCOST=1
         ;;
     v)  SKIPVECTOR=1
         ;;
+    r)  SKIPRASTER=1
+        ;;
     d)  DEBUG=1
+        TEMPDIR=${OPTARG}
         ;;
     s)  DBWHERE=${OPTARG}
         ;;
     w)  OVERWRITE=1
-        ;;
-    f)  TEMPDIR=${OPTARG}
-        ;;
-    o)  OUTDIR=${OPTARG}
-        hasO=1
         ;;
     \?)
         usage
@@ -90,11 +87,6 @@ while getopts "h?c?v?d?s:?f:?o:w" opt; do
         exit 1
     esac
 done
-if [ ${hasO} -eq 0 ]; then
-    echo "Missing -o option for output directory"
-    usage
-    exit 1
-fi
 
 # Create temporary directory if necessary
 if [ ${TEMPDIR} = 'none' ]; then
@@ -106,7 +98,7 @@ if [ ${TEMPDIR} = 'none' ]; then
 fi
 
 # Create the vector cost layers
-if [ ${SKIPVECTOR} -eq 0 ] && [ ${COSTONLY} -eq 0 ]; then
+if [ ${SKIPVECTOR} -eq 0 ]; then
     echo "Running bike_fact_costs.sql"
     psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
         -v db_srid="${DBSRID}" \
@@ -118,7 +110,7 @@ if [ ${SKIPVECTOR} -eq 0 ] && [ ${COSTONLY} -eq 0 ]; then
 fi
 
 # Rasterize
-if [ ${COSTONLY} -eq 0 ]; then
+if [ ${SKIPRASTER} -eq 0 ]; then
     if [ ! -e "${TEMPDIR}/cost_exist.tif" ] || [ ${OVERWRITE} -eq 1 ]; then
         echo "Rasterizing existing facilities"
         gdal_rasterize \
@@ -268,7 +260,7 @@ if [ ${COSTONLY} -eq 0 ]; then
 fi
 
 # Polygonize the cost results
-if [ ${COSTONLY} -eq 0 ] && [ ${SKIPVECTOR} -eq 0 ]; then
+if [ ${SKIPVECTOR} -eq 0 ]; then
     echo 'Making polygons from barriers with polygonize.sh'
     bash sh/polygonize.sh \
         -s automated \
@@ -278,7 +270,7 @@ if [ ${COSTONLY} -eq 0 ] && [ ${SKIPVECTOR} -eq 0 ]; then
 fi
 
 # Generate lines from the polygons
-if [ ${COSTONLY} -eq 0 ] && [ ${SKIPVECTOR} -eq 0 ]; then
+if [ ${SKIPVECTOR} -eq 0 ]; then
     echo 'Running barrier_lines.sql'
     psql \
         -h ${DBHOST} \
@@ -289,7 +281,7 @@ if [ ${COSTONLY} -eq 0 ] && [ ${SKIPVECTOR} -eq 0 ]; then
 fi
 
 # Create test locations
-if [ ${COSTONLY} -eq 0 ] && [ ${SKIPVECTOR} -eq 0 ]; then
+if [ ${SKIPVECTOR} -eq 0 ]; then
     echo 'Running barrier_deviation_test_lines.sql'
     psql \
         -h ${DBHOST} \
@@ -302,54 +294,47 @@ if [ ${COSTONLY} -eq 0 ] && [ ${SKIPVECTOR} -eq 0 ]; then
 fi
 
 # Update the least cost distances for all features
-echo 'Setting least cost distances for features using cost.py'
-if [ "${DBWHERE}" = 'none' ]; then
-    DBQUERY="select id,st_xmin(geom),st_xmax(geom),st_ymin(geom),st_ymax(geom) from (select id, ST_Buffer(geom,1000) as geom from barrier_deviation_test_lines) a"
-else
-    DBQUERY="select id,st_xmin(geom),st_xmax(geom),st_ymin(geom),st_ymax(geom) from (select id, ST_Buffer(geom,1000) as geom from barrier_deviation_test_lines WHERE ${DBWHERE}) a"
+if [ ${SKIPCOST} -eq 0 ]; then
+    echo 'Setting least cost distances for features using cost.py'
+    if [ "${DBWHERE}" = 'none' ]; then
+        DBQUERY="select id,st_xmin(geom),st_xmax(geom),st_ymin(geom),st_ymax(geom) from (select id, ST_Buffer(geom,1000) as geom from barrier_deviation_test_lines) a"
+    else
+        DBQUERY="select id,st_xmin(geom),st_xmax(geom),st_ymin(geom),st_ymax(geom) from (select id, ST_Buffer(geom,1000) as geom from barrier_deviation_test_lines WHERE ${DBWHERE}) a"
+    fi
+    psql \
+        -h ${DBHOST} \
+        -d ${DBNAME} \
+        -U ${DBUSER} \
+        -c "${DBQUERY}" \
+        --single-transaction \
+        --set AUTOCOMMIT=off \
+        --set ON_ERROR_STOP=on \
+        --no-align \
+        -t \
+        --field-separator ' ' \
+        --quiet \
+        | while read FID XMIN XMAX YMIN YMAX ; do
+            echo "id: ${FID}"
+            gdal_translate \
+                -of GTiff \
+                -projwin ${XMIN} ${YMAX} ${XMAX} ${YMIN} \
+                "${TEMPDIR}/cost_composite.tif" \
+                "${TEMPDIR}/cost_composite__${FID}.tif"
+
+            python py/cost.py \
+                -f "${TEMPDIR}/cost_composite__${FID}.tif" \
+                -h ${DBHOST} \
+                -d ${DBNAME} \
+                -u ${DBUSER} \
+                -t barrier_deviation_test_lines \
+                -r 5 \
+                -w "id=${FID}"
+
+            if [ ${DEBUG} -ne 1 ]; then
+                rm "${TEMPDIR}/cost_composite__${FID}.tif"
+            fi
+        done
 fi
-psql \
-    -h ${DBHOST} \
-    -d ${DBNAME} \
-    -U ${DBUSER} \
-    -c "${DBQUERY}" \
-    --single-transaction \
-    --set AUTOCOMMIT=off \
-    --set ON_ERROR_STOP=on \
-    --no-align \
-    -t \
-    --field-separator ' ' \
-    --quiet \
-    | while read FID XMIN XMAX YMIN YMAX ; do
-        echo "id: ${FID}"
-        gdal_translate \
-            -of GTiff \
-            -projwin ${XMIN} ${YMAX} ${XMAX} ${YMIN} \
-            "${TEMPDIR}/cost_composite.tif" \
-            "${TEMPDIR}/cost_composite__${FID}.tif"
-        # gdalwarp \
-        #     -of GTiff \
-        #     -overwrite \
-        #     -cutline "PG:host=${DBHOST} user=${DBUSER} dbname=${DBNAME}" \
-        #     -csql "select id, st_xmin(geom), st_xmax(geom), st_ymin(geom), st_ymax(geom)  where id=${FID}) a" \
-        #     -crop_to_cutline \
-        #     -of GTiff "${TEMPDIR}/cost_composite.tif" \
-        #     -q \
-        #     "${TEMPDIR}/cost_composite__${FID}.tif"
-
-        python py/cost.py \
-            -f "${TEMPDIR}/cost_composite__${FID}.tif" \
-            -h ${DBHOST} \
-            -d ${DBNAME} \
-            -u ${DBUSER} \
-            -t barrier_deviation_test_lines \
-            -r 5 \
-            -w "id=${FID}"
-
-        if [ ${DEBUG} -ne 1 ]; then
-            rm "${TEMPDIR}/cost_composite__${FID}.tif"
-        fi
-    done
 
 # Delete temp dir
 if [ ${DEBUG} -ne 1 ]; then
