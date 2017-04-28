@@ -216,7 +216,7 @@ def main(argv):
 
         # get least cost distances for both points
         if not currentIndex == index1:
-            print("New source feature")
+            # print("New source feature")
             currentIndex = index1
             currentLcd = createLCD(costSurfaceRaster,costSurface,coord1)
         lcd1 = currentLcd
