@@ -46,7 +46,7 @@ Additional arguments are:
 -c - Skip the cost portion of the analysis
 -d [folder location] - Run in debug mode (doesn't delete temporary files)
 -w - Overwrite any existing files
--s - SQL where clause to filter barrier test features (given without WHERE)
+-s [filter statement] - SQL where clause to filter barrier test features (given without WHERE)
 
 Optional ENV vars:
 
@@ -83,7 +83,7 @@ while getopts "h?c?v?r?d:?s:?w?" opt; do
         exit 1
         ;;
     :)
-        echo "Option -$OPTARG requires an argument"
+        echo "Option -$opt requires an argument"
         exit 1
     esac
 done
