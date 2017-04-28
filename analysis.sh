@@ -322,6 +322,7 @@ if [ ${SKIPCOST} -eq 0 ]; then
             echo "id: ${FID}"
             gdal_translate \
                 -of GTiff \
+                -q \
                 -projwin ${XMIN} ${YMAX} ${XMAX} ${YMIN} \
                 "${TEMPDIR}/cost_composite.tif" \
                 "${TEMPDIR}/cost_composite__${FID}.tif"
