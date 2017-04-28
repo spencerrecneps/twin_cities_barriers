@@ -12,23 +12,28 @@ CREATE TABLE automated.barrier_points (
 );
 
 -- insert
-WITH all_barriers AS (
-    SELECT  (ST_Dump(ST_Intersection(bl.geom, barriers.geom))).geom
-    FROM    barrier_lines bl,
-            barriers
-    WHERE   ST_Intersects(bl.geom,barriers.geom)
-    AND     (
-                (bl.cost_exist > 500 AND bl.cost_improved::FLOAT / bl.cost_exist < 0.7)
-            OR  (bl.cost_exist < 500 AND bl.cost_improved::FLOAT / bl.cost_exist < 0.5)
-            )
-)
 INSERT INTO automated.barrier_points (geom)
-SELECT  ST_Centroid(
-            unnest(
-                ST_ClusterWithin(
-                        geom,
-                        100
-                )
-            )
-        )
-FROM    all_barriers;
+SELECT  ST_Centroid(geom)
+FROM    barrier_deviation_test_lines
+WHERE   cost_exist > 1000;
+--
+-- WITH all_barriers AS (
+--     SELECT  (ST_Dump(ST_Intersection(bl.geom, barriers.geom))).geom
+--     FROM    barrier_lines bl,
+--             barriers
+--     WHERE   ST_Intersects(bl.geom,barriers.geom)
+--     AND     (
+--                 (bl.cost_exist > 500 AND bl.cost_improved::FLOAT / bl.cost_exist < 0.7)
+--             OR  (bl.cost_exist < 500 AND bl.cost_improved::FLOAT / bl.cost_exist < 0.5)
+--             )
+-- )
+-- INSERT INTO automated.barrier_points (geom)
+-- SELECT  ST_Centroid(
+--             unnest(
+--                 ST_ClusterWithin(
+--                         geom,
+--                         100
+--                 )
+--             )
+--         )
+-- FROM    all_barriers;
