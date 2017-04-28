@@ -18,7 +18,15 @@ CREATE TABLE scratch.barrier_lines_raw (
 DROP TABLE IF EXISTS scratch.barrier_lines_precut;
 CREATE TABLE scratch.barrier_lines_precut (
     id SERIAL PRIMARY KEY,
-    geom geometry(multilinestring,:db_srid)
+    geom geometry(linestring,:db_srid)
+);
+
+DROP TABLE IF EXISTS scratch.commdes_union;
+CREATE TABLE scratch.commdes_union (
+    id SERIAL PRIMARY KEY,
+    geom geometry(multipolygon,:db_srid),
+    community_type TEXT,
+    spacing INTEGER
 );
 
 DROP TABLE IF EXISTS automated.barrier_lines;
@@ -87,53 +95,66 @@ FROM    (SELECT ST_Union(geom) AS geom FROM scratch.barrier_lines_raw) a;
 CREATE INDEX sidx_barrier_lines_precut ON scratch.barrier_lines_precut USING GIST (geom);
 ANALYZE scratch.barrier_lines_precut;
 
+
+----------------------------------------------------
+-- combine community designations into single
+-- geometries
+----------------------------------------------------
+-- urban center
+INSERT INTO scratch.commdes_union (geom, community_type, spacing)
+SELECT  ST_Multi(ST_Buffer(ST_Union(ST_Buffer(geom,10)),-10)),
+        'urban center',
+        :spacing_uc
+FROM    community_designations cd
+WHERE   cd.comdes2040 = 23;
+
+-- urban
+INSERT INTO scratch.commdes_union (geom, community_type, spacing)
+SELECT  ST_Multi(ST_Buffer(ST_Union(ST_Buffer(geom,10)),-10)),
+        'urban',
+        :spacing_urb
+FROM    community_designations cd
+WHERE   cd.comdes2040 = 24;
+
+-- suburban
+INSERT INTO scratch.commdes_union (geom, community_type, spacing)
+SELECT  ST_Multi(ST_Buffer(ST_Union(ST_Buffer(geom,10)),-10)),
+        'suburban',
+        :spacing_sub
+FROM    community_designations cd
+WHERE   cd.comdes2040 > 24
+AND     cd.comdes2040 <= 36;
+
+-- rural
+INSERT INTO scratch.commdes_union (geom, community_type, spacing)
+SELECT  ST_Multi(ST_Buffer(ST_Union(ST_Buffer(geom,10)),-10)),
+        'rural',
+        :spacing_rur
+FROM    community_designations cd
+WHERE   cd.comdes2040 > 36;
+
+CREATE INDEX sidx_commdes_union ON scratch.commdes_union USING GIST (geom);
+ANALYZE scratch.commdes_union;
+
+
 ----------------------------------------------------
 -- break barriers at community designations
 ----------------------------------------------------
--- urban center
 INSERT INTO automated.barrier_lines (geom, community_type, spacing, raster_buffer)
-SELECT  ST_Intersection(bl.geom,cd.geom),
-        'urban center',
-        :spacing_uc,
-        :spacing_uc * 1.2
+SELECT  bl.geom,
+        cd.community_type,
+        cd.spacing,
+        cd.spacing * 1.2
 FROM    scratch.barrier_lines_precut bl,
-        community_designations cd
-WHERE   cd.comdes2040 = 23
-AND     ST_Intersects(bl.geom,cd.geom);
-
--- urban
-INSERT INTO automated.barrier_lines (geom, community_type, spacing, raster_buffer)
-SELECT  ST_Intersection(bl.geom,cd.geom),
-        'urban',
-        :spacing_urb,
-        :spacing_urb * 1.2
-FROM    scratch.barrier_lines_precut bl,
-        community_designations cd
-WHERE   cd.comdes2040 = 24
-AND     ST_Intersects(bl.geom,cd.geom);
-
--- suburban
-INSERT INTO automated.barrier_lines (geom, community_type, spacing, raster_buffer)
-SELECT  ST_Intersection(bl.geom,cd.geom),
-        'suburban',
-        :spacing_sub,
-        :spacing_sub * 1.2
-FROM    scratch.barrier_lines_precut bl,
-        community_designations cd
-WHERE   cd.comdes2040 > 24
-AND     cd.comdes2040 <= 36
-AND     ST_Intersects(bl.geom,cd.geom);
-
--- rural
-INSERT INTO automated.barrier_lines (geom, community_type, spacing, raster_buffer)
-SELECT  ST_Intersection(bl.geom,cd.geom),
-        'rural',
-        :spacing_rur,
-        :spacing_rur * 1.2
-FROM    scratch.barrier_lines_precut bl,
-        community_designations cd
-WHERE   cd.comdes2040 > 36
-AND     ST_Intersects(bl.geom,cd.geom);
+        commdes_union cd
+WHERE   ST_Intersects(bl.geom,cd.geom)
+AND     cd.id = (
+            SELECT      id
+            FROM        commdes_union c2
+            WHERE       ST_Intersects(bl.geom,c2.geom)
+            ORDER BY    ST_Length(ST_Intersection(bl.geom,c2.geom)) DESC
+            LIMIT       1
+        );
 
 -- index
 CREATE INDEX sidx_barrier_lines ON automated.barrier_lines USING GIST (geom);
@@ -141,4 +162,5 @@ CREATE INDEX sidx_barrier_lines ON automated.barrier_lines USING GIST (geom);
 -- drop raw tables
 DROP TABLE IF EXISTS scratch.barrier_lines_raw;
 DROP TABLE IF EXISTS scratch.barrier_lines_precut;
+DROP TABLE IF EXISTS scratch.commdes_union;
 VACUUM ANALYZE;

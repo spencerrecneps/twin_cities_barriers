@@ -6,7 +6,6 @@ export DBPASS="${DBPASS:-gis}"
 export DBNAME="${DBNAME:-twin_cities_barriers}"
 export DBSRID="${DBSRID:-26915}"
 
-export BARRIERDIST=300
 export TESTLINELENGTH=300
 export SPACINGURBCTR=800
 export SPACINGURBAN=1200

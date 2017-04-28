@@ -27,7 +27,6 @@ TEMPDIR="${TEMPDIR:-none}"
 OVERWRITE="${OVERWRITE:-0}"
 
 # Analysis inputs
-BARRIERDIST="${BARRIERDIST:-300}"
 TESTLINELENGTH="${TESTLINELENGTH:-300}"
 SPACINGURBCTR="${SPACINGURBCTR:-1000}"
 SPACINGURBAN="${SPACINGURBAN:-1000}"
@@ -295,7 +294,6 @@ if [ ${SKIPVECTOR} -eq 0 ]; then
         -d ${DBNAME} \
         -U ${DBUSER} \
         -v db_srid=${DBSRID} \
-        -v max_dist=${BARRIERDIST} \
         -v line_len=${TESTLINELENGTH} \
         -f sql/barrier_deviation_test_lines.sql
 fi
