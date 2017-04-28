@@ -8,27 +8,18 @@
 DROP TABLE IF EXISTS barrier_points;
 CREATE TABLE automated.barrier_points (
     id SERIAL PRIMARY KEY,
-    geom geometry(point,:db_srid)
+    geom geometry(point,:db_srid),
+    community_type TEXT
 );
 
 -- insert
-WITH all_barriers AS (
-    SELECT  (ST_Dump(ST_Intersection(bl.geom, barriers.geom))).geom
-    FROM    barrier_lines bl,
-            barriers
-    WHERE   ST_Intersects(bl.geom,barriers.geom)
-    AND     (
-                (bl.cost_exist > 500 AND bl.cost_improved::FLOAT / bl.cost_exist < 0.7)
-            OR  (bl.cost_exist < 500 AND bl.cost_improved::FLOAT / bl.cost_exist < 0.5)
-            )
-)
-INSERT INTO automated.barrier_points (geom)
-SELECT  ST_Centroid(
-            unnest(
-                ST_ClusterWithin(
-                        geom,
-                        100
-                )
-            )
-        )
-FROM    all_barriers;
+INSERT INTO automated.barrier_points (geom, community_type)
+SELECT  ST_Centroid(geom),
+        community_type
+FROM    barrier_deviation_test_lines
+WHERE   cost_exist >    CASE
+                        WHEN community_type = 'urban center' THEN 600
+                        WHEN community_type = 'urban' THEN 900
+                        WHEN community_type = 'suburban' THEN 1200
+                        WHEN community_type = 'rural' THEN 2400
+                        END;
