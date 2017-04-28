@@ -163,4 +163,3 @@ CREATE INDEX sidx_barrier_lines ON automated.barrier_lines USING GIST (geom);
 DROP TABLE IF EXISTS scratch.barrier_lines_raw;
 DROP TABLE IF EXISTS scratch.barrier_lines_precut;
 DROP TABLE IF EXISTS scratch.commdes_union;
-VACUUM ANALYZE;

@@ -340,9 +340,21 @@ if [ ${SKIPCOST} -eq 0 ]; then
                 rm "${TEMPDIR}/cost_composite__${FID}.tif"
             fi
         done
+
+    psql \
+        -h ${DBHOST} \
+        -d ${DBNAME} \
+        -U ${DBUSER} \
+        -v db_srid=${DBSRID} \
+        -f sql/barrier_points.sql
 fi
 
-# Delete temp dir
+# Clean up
+psql \
+    -h ${DBHOST} \
+    -d ${DBNAME} \
+    -U ${DBUSER} \
+    -c "vacuum analyze;"
 if [ ${DEBUG} -ne 1 ]; then
     rm -rf "${TEMPDIR}"
 fi
