@@ -29,7 +29,10 @@ OVERWRITE="${OVERWRITE:-0}"
 # Analysis inputs
 BARRIERDIST="${BARRIERDIST:-300}"
 TESTLINELENGTH="${TESTLINELENGTH:-300}"
-ROUTESEARCHDIST="${ROUTESEARCHDIST:-1000}"
+SPACINGURBCTR="${SPACINGURBCTR:-1000}"
+SPACINGURBAN="${SPACINGURBAN:-1000}"
+SPACINGSUBURB="${SPACINGSUBURB:-1000}"
+SPACINGRURAL="${SPACINGRURAL:-1000}"
 
 function usage() {
     echo -n \
@@ -277,6 +280,10 @@ if [ ${SKIPVECTOR} -eq 0 ]; then
         -d ${DBNAME} \
         -U ${DBUSER} \
         -v db_srid=${DBSRID} \
+        -v spacing_uc=${SPACINGURBCTR}
+        -v spacing_urb=${SPACINGURBAN}
+        -v spacing_sub=${SPACINGSUBURB}
+        -v spacing_rur=${SPACINGRURAL}
         -f sql/barrier_lines.sql
 fi
 
@@ -297,9 +304,9 @@ fi
 if [ ${SKIPCOST} -eq 0 ]; then
     echo 'Setting least cost distances for features using cost.py'
     if [ "${DBWHERE}" = 'none' ]; then
-        DBQUERY="select id,st_xmin(geom),st_xmax(geom),st_ymin(geom),st_ymax(geom) from (select id, ST_Buffer(geom,1000) as geom from barrier_deviation_test_lines) a"
+        DBQUERY="select id,st_xmin(geom),st_xmax(geom),st_ymin(geom),st_ymax(geom) from (select id, ST_Buffer(geom,${RASTERCUTBUFFER}) as geom from barrier_deviation_test_lines) a"
     else
-        DBQUERY="select id,st_xmin(geom),st_xmax(geom),st_ymin(geom),st_ymax(geom) from (select id, ST_Buffer(geom,1000) as geom from barrier_deviation_test_lines WHERE ${DBWHERE}) a"
+        DBQUERY="select id,st_xmin(geom),st_xmax(geom),st_ymin(geom),st_ymax(geom) from (select id, ST_Buffer(geom,${RASTERCUTBUFFER}) as geom from barrier_deviation_test_lines WHERE ${DBWHERE}) a"
     fi
     psql \
         -h ${DBHOST} \

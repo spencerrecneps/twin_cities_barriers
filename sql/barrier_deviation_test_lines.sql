@@ -3,7 +3,6 @@
 -- for testing route deviations.
 -- Variables
 --      db_srid -> SRID
---      max_dist -> Maximum distance between test points
 --      line_len -> Line length
 ------------------------------------------------------------
 -- create table
@@ -11,23 +10,24 @@ DROP TABLE IF EXISTS automated.barrier_deviation_test_lines;
 CREATE TABLE automated.barrier_deviation_test_lines (
     id SERIAL PRIMARY KEY,
     geom geometry(linestring,:db_srid),
+    community_type TEXT,
     cost_exist INTEGER,
     cost_improved INTEGER
 );
 
--- draw lines
+-- segmentize lines
 DROP TABLE IF EXISTS scratch.tmp_segs;
 CREATE TABLE scratch.tmp_segs (id SERIAL PRIMARY KEY, geom geometry(linestring,:db_srid));
 INSERT INTO tmp_segs (geom)
 SELECT  ST_LineSubstring(
             geom,
             i/ST_Length(geom),
-            LEAST(i/ST_Length(geom) + :max_dist/ST_Length(geom),1)
+            LEAST(i/ST_Length(geom) + spacing/ST_Length(geom),1)
         ) AS geom
 FROM    automated.barrier_lines,
-        generate_series(0,floor(ST_Length(geom))::int,:max_dist) i
+        generate_series(0,floor(ST_Length(geom))::int,spacing) i
 WHERE   i < ST_Length(geom)
-AND     ST_Length(geom) - i > :max_dist;
+AND     ST_Length(geom) - i > spacing;
 
 DROP TABLE IF EXISTS scratch.tmp_pts;
 CREATE TABLE scratch.tmp_pts (id SERIAL PRIMARY KEY, geom geometry(point,:db_srid), azi FLOAT);
