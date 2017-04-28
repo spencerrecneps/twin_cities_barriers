@@ -350,11 +350,15 @@ if [ ${SKIPCOST} -eq 0 ]; then
 fi
 
 # Clean up
-psql \
+echo "Vacuuming database"
+PGOPTIONS='--client-min-messages=ERROR' \
+    psql \
     -h ${DBHOST} \
     -d ${DBNAME} \
     -U ${DBUSER} \
+    --quiet \
     -c "vacuum analyze;"
+
 if [ ${DEBUG} -ne 1 ]; then
     rm -rf "${TEMPDIR}"
 fi
