@@ -280,10 +280,10 @@ if [ ${SKIPVECTOR} -eq 0 ]; then
         -d ${DBNAME} \
         -U ${DBUSER} \
         -v db_srid=${DBSRID} \
-        -v spacing_uc=${SPACINGURBCTR}
-        -v spacing_urb=${SPACINGURBAN}
-        -v spacing_sub=${SPACINGSUBURB}
-        -v spacing_rur=${SPACINGRURAL}
+        -v spacing_uc=${SPACINGURBCTR} \
+        -v spacing_urb=${SPACINGURBAN} \
+        -v spacing_sub=${SPACINGSUBURB} \
+        -v spacing_rur=${SPACINGRURAL} \
         -f sql/barrier_lines.sql
 fi
 
