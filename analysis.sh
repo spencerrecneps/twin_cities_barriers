@@ -302,9 +302,9 @@ fi
 if [ ${SKIPCOST} -eq 0 ]; then
     echo 'Setting least cost distances for features using cost.py'
     if [ "${DBWHERE}" = 'none' ]; then
-        DBQUERY="select id,st_xmin(geom),st_xmax(geom),st_ymin(geom),st_ymax(geom) from (select id, ST_Buffer(geom,${RASTERCUTBUFFER}) as geom from barrier_deviation_test_lines) a"
+        DBQUERY="select id,st_xmin(geom),st_xmax(geom),st_ymin(geom),st_ymax(geom) from (select id, ST_Buffer(geom,raster_buffer) as geom from barrier_deviation_test_lines) a"
     else
-        DBQUERY="select id,st_xmin(geom),st_xmax(geom),st_ymin(geom),st_ymax(geom) from (select id, ST_Buffer(geom,${RASTERCUTBUFFER}) as geom from barrier_deviation_test_lines WHERE ${DBWHERE}) a"
+        DBQUERY="select id,st_xmin(geom),st_xmax(geom),st_ymin(geom),st_ymax(geom) from (select id, ST_Buffer(geom,raster_buffer) as geom from barrier_deviation_test_lines WHERE ${DBWHERE}) a"
     fi
     psql \
         -h ${DBHOST} \
