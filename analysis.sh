@@ -268,9 +268,9 @@ if [ ${COSTONLY} -eq 0 ]; then
 fi
 
 # Polygonize the cost results
-if [ ${COSTONLY} -eq 0 ]; then
+if [ ${COSTONLY} -eq 0 ] && [ ${SKIPVECTOR} -eq 0 ]; then
     echo 'Making polygons from barriers with polygonize.sh'
-    sh/polygonize.sh \
+    bash sh/polygonize.sh \
         -s automated \
         -t barrier_polys \
         -l 11110 \
@@ -278,7 +278,7 @@ if [ ${COSTONLY} -eq 0 ]; then
 fi
 
 # Generate lines from the polygons
-if [ ${COSTONLY} -eq 0 ]; then
+if [ ${COSTONLY} -eq 0 ] && [ ${SKIPVECTOR} -eq 0 ]; then
     echo 'Running barrier_lines.sql'
     psql \
         -h ${DBHOST} \
@@ -289,7 +289,7 @@ if [ ${COSTONLY} -eq 0 ]; then
 fi
 
 # Create test locations
-if [ ${COSTONLY} -eq 0 ]; then
+if [ ${COSTONLY} -eq 0 ] && [ ${SKIPVECTOR} -eq 0 ]; then
     echo 'Running barrier_deviation_test_lines.sql'
     psql \
         -h ${DBHOST} \
@@ -304,9 +304,9 @@ fi
 # Update the least cost distances for all features
 echo 'Setting least cost distances for features using cost.py'
 if [ "${DBWHERE}" = 'none' ]; then
-    DBQUERY="select id from barrier_deviation_test_lines"
+    DBQUERY="select id,st_xmin(geom),st_xmax(geom),st_ymin(geom),st_ymax(geom) from (select id, ST_Buffer(geom,1000) as geom from barrier_deviation_test_lines) a"
 else
-    DBQUERY="select id from barrier_deviation_test_lines where ${DBWHERE}"
+    DBQUERY="select id,st_xmin(geom),st_xmax(geom),st_ymin(geom),st_ymax(geom) from (select id, ST_Buffer(geom,1000) as geom from barrier_deviation_test_lines WHERE ${DBWHERE}) a"
 fi
 psql \
     -h ${DBHOST} \
@@ -320,18 +320,22 @@ psql \
     -t \
     --field-separator ' ' \
     --quiet \
-    | while read FID ; do
+    | while read FID XMIN XMAX YMIN YMAX ; do
         echo "id: ${FID}"
-        # gdal_translate -of GTiff -projwin 440607.3 4960659.3 442677.668 4958370.65 ~/gis/twin_cities_barriers/cost_composite.tif ~/gis/twin_cities_barriers/translate.tif
-        gdalwarp \
+        gdal_translate \
             -of GTiff \
-            -overwrite \
-            -cutline "PG:host=${DBHOST} user=${DBUSER} dbname=${DBNAME}" \
-            -csql "select ST_Envelope(ST_Buffer(geom,1000)) from barrier_deviation_test_lines where id=${FID}" \
-            -crop_to_cutline \
-            -of GTiff "${TEMPDIR}/cost_composite.tif" \
-            -q \
+            -projwin ${XMIN} ${YMAX} ${XMAX} ${YMIN} \
+            "${TEMPDIR}/cost_composite.tif" \
             "${TEMPDIR}/cost_composite__${FID}.tif"
+        # gdalwarp \
+        #     -of GTiff \
+        #     -overwrite \
+        #     -cutline "PG:host=${DBHOST} user=${DBUSER} dbname=${DBNAME}" \
+        #     -csql "select id, st_xmin(geom), st_xmax(geom), st_ymin(geom), st_ymax(geom)  where id=${FID}) a" \
+        #     -crop_to_cutline \
+        #     -of GTiff "${TEMPDIR}/cost_composite.tif" \
+        #     -q \
+        #     "${TEMPDIR}/cost_composite__${FID}.tif"
 
         python py/cost.py \
             -f "${TEMPDIR}/cost_composite__${FID}.tif" \
