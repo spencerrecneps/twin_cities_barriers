@@ -109,6 +109,10 @@ if [ ${SKIPVECTOR} -eq 0 ]; then
     psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
         -v db_srid="${DBSRID}" \
         -f sql/barriers.sql
+    echo "Identifying planned facilities across barriers"
+    psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
+        -v db_srid="${DBSRID}" \
+        -f sql/planned_crossings.sql
 fi
 
 # Rasterize
