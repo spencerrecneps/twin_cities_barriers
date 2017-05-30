@@ -109,21 +109,6 @@ if [ ${SKIPVECTOR} -eq 0 ]; then
     psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
         -v db_srid="${DBSRID}" \
         -f sql/barriers.sql
-    echo "Identifying planned facilities across barriers"
-    psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
-        -v db_srid="${DBSRID}" \
-        -f sql/planned_crossings.sql
-    echo "Identfying clusters of wikimap crossing comments"
-    psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
-        -v db_srid="${DBSRID}" \
-        -v cluster_tolerance=75 \
-        -v num_points=2 \
-        -v max_barrier_dist=100 \
-        -f sql/wiki_crossings.sql
-    echo "Identifying collector roads that cross barriers"
-    psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
-        -v db_srid="${DBSRID}" \
-        -f sql/collector_crossings.sql
 fi
 
 # Rasterize
@@ -303,6 +288,21 @@ fi
 
 # Create test locations
 if [ ${SKIPVECTOR} -eq 0 ]; then
+    echo "Identifying planned facilities across barriers"
+    psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
+        -v db_srid="${DBSRID}" \
+        -f sql/planned_crossings.sql
+    echo "Identfying clusters of wikimap crossing comments"
+    psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
+        -v db_srid="${DBSRID}" \
+        -v cluster_tolerance=75 \
+        -v num_points=2 \
+        -v max_barrier_dist=100 \
+        -f sql/wiki_crossings.sql
+    echo "Identifying collector roads that cross barriers"
+    psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
+        -v db_srid="${DBSRID}" \
+        -f sql/collector_crossings.sql
     echo 'Running barrier_deviation_test_lines.sql'
     psql \
         -h ${DBHOST} \
