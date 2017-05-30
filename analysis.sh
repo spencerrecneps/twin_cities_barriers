@@ -120,6 +120,10 @@ if [ ${SKIPVECTOR} -eq 0 ]; then
         -v num_points=2 \
         -v max_barrier_dist=100 \
         -f sql/wiki_crossings.sql
+    echo "Identifying collector roads that cross barriers"
+    psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
+        -v db_srid="${DBSRID}" \
+        -f sql/collector_crossings.sql
 fi
 
 # Rasterize
