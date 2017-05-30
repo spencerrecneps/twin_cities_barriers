@@ -113,6 +113,13 @@ if [ ${SKIPVECTOR} -eq 0 ]; then
     psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
         -v db_srid="${DBSRID}" \
         -f sql/planned_crossings.sql
+    echo "Identfying clusters of wikimap crossing comments"
+    psql -h "${DBHOST}" -U "${DBUSER}" -d "${DBNAME}" \
+        -v db_srid="${DBSRID}" \
+        -v cluster_tolerance=75 \
+        -v num_points=2 \
+        -v max_barrier_dist=100 \
+        -f sql/wiki_crossings.sql
 fi
 
 # Rasterize
