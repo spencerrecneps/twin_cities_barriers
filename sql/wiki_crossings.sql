@@ -10,7 +10,11 @@
 DROP TABLE IF EXISTS automated.wiki_crossings;
 CREATE TABLE automated.wiki_crossings (
     id SERIAL PRIMARY KEY,
-    geom geometry(point,:db_srid)
+    geom geometry(point,:db_srid),
+    azi FLOAT,
+    community_type TEXT,
+    spacing INTEGER,
+    raster_buffer INTEGER
 );
 
 WITH clusters AS (
@@ -32,4 +36,40 @@ AND     EXISTS (
             SELECT  1
             FROM    barrier_lines bl
             WHERE   ST_DWithin(bl.geom,clusters.geom,:max_barrier_dist)
+        );
+
+-- index
+CREATE INDEX sidx_wiki_crossings_geom ON automated.wiki_crossings USING GIST (geom);
+ANALYZE automated.wiki_crossings (geom);
+
+-- barrier characteristics
+UPDATE  automated.wiki_crossings
+SET     community_type = bl.community_type,
+        spacing = bl.spacing,
+        raster_buffer = bl.raster_buffer
+FROM    barrier_lines bl
+WHERE   bl.id = (
+            SELECT      id
+            FROM        barrier_lines bl2
+            WHERE       ST_DWithin(wiki_crossings.geom,bl2.geom,10)
+            ORDER BY    ST_Distance(wiki_crossings.geom,bl2.geom)
+            LIMIT       1
+        );
+
+-- azimuth of barrier
+UPDATE  automated.wiki_crossings
+SET     azi = (
+            SELECT      ST_Azimuth(
+                            wiki_crossings.geom,
+                            ST_EndPoint(
+                                ST_Intersection(
+                                    ST_Buffer(wiki_crossings.geom,1),
+                                    bl.geom
+                                )
+                            )
+                        )
+            FROM        barrier_lines bl
+            WHERE       ST_DWithin(wiki_crossings.geom,bl.geom,10)
+            ORDER BY    ST_Distance(wiki_crossings.geom,bl.geom) ASC
+            LIMIT       1
         );
