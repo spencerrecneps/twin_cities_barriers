@@ -74,8 +74,10 @@ WHERE   NOT EXISTS (
         )
 AND     NOT EXISTS (
             SELECT  1
-            FROM    generated.lakes
-            WHERE   ST_Intersects(x.geom,lakes.geom)
+            FROM    received.dnr_water_poly lakes
+            WHERE   lakes.shape_area >= 25000
+            AND     lakes.wb_class NOT IN ('Riverine polygon','Industrial Waste Pd','Shallow Water','Artificial Basin')
+            AND     ST_Intersects(x.geom,lakes.geom)
         );
 
 -- index
@@ -184,6 +186,8 @@ AND     NOT EXISTS (
         )
 AND     NOT EXISTS (
             SELECT  1
-            FROM    generated.lakes
-            WHERE   ST_Intersects(tmp_pts.geom,lakes.geom)
+            FROM    received.dnr_water_poly lakes
+            WHERE   lakes.shape_area >= 25000
+            AND     lakes.wb_class NOT IN ('Riverine polygon','Industrial Waste Pd','Shallow Water','Artificial Basin')
+            AND     ST_Intersects(tmp_pts.geom,lakes.geom)
         );
