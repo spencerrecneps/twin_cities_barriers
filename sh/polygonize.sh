@@ -58,7 +58,7 @@ while getopts "h?d?s:?t:u:l:" opt; do
         hasL=1
         ;;
     u)  UPPER=${OPTARG}
-        hasL=1
+        hasU=1
         ;;
     \?)
         usage
