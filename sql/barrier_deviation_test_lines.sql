@@ -71,6 +71,11 @@ WHERE   NOT EXISTS (
             SELECT  1
             FROM    planned_crossings pc
             WHERE   ST_DWithin(x.geom,pc.geom,x.spacing*0.3)
+        )
+AND     NOT EXISTS (
+            SELECT  1
+            FROM    generated.lakes
+            WHERE   ST_Intersects(x.geom,lakes.geom)
         );
 
 -- index
@@ -176,4 +181,9 @@ AND     NOT EXISTS (
             SELECT  1
             FROM    automated.barrier_deviation_test_lines tl
             WHERE   ST_DWithin(tmp_pts.geom,tl.geom,tmp_pts.spacing*0.3)
+        )
+AND     NOT EXISTS (
+            SELECT  1
+            FROM    generated.lakes
+            WHERE   ST_Intersects(tmp_pts.geom,lakes.geom)
         );

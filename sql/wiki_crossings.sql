@@ -63,7 +63,7 @@ SET     azi = (
                             wiki_crossings.geom,
                             ST_EndPoint(
                                 ST_Intersection(
-                                    ST_Buffer(wiki_crossings.geom,1),
+                                    ST_Buffer(wiki_crossings.geom,40),
                                     bl.geom
                                 )
                             )
