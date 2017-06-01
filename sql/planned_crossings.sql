@@ -14,12 +14,57 @@ CREATE TABLE automated.planned_crossings (
     raster_buffer INTEGER
 );
 
-INSERT INTO automated.planned_crossings (geom)
+---------------------------------------------
+-- All possible intersection points of all
+-- all barrier types
+---------------------------------------------
+DROP TABLE IF EXISTS tmp_plancross;
+CREATE TEMPORARY TABLE tmp_plancross (id SERIAL PRIMARY KEY, geom geometry(point,:db_srid));
+
+-- expressways
+INSERT INTO tmp_plancross (geom)
 SELECT  (ST_Dump(ST_Intersection(b.geom,p.geom))).geom
-FROM    barrier_lines b,
+FROM    bike_fac_costs_expys b,
         bike_fac_costs_plan p
-WHERE   ST_Intersects(b.geom,p.geom)
-AND     ST_Length(ST_Intersection(p.geom,ST_Buffer(b.geom,5))) < 16;
+WHERE   ST_Intersects(b.geom,p.geom);
+
+-- railroads
+INSERT INTO tmp_plancross (geom)
+SELECT  (ST_Dump(ST_Intersection(b.geom,p.geom))).geom
+FROM    bike_fac_costs_rails b,
+        bike_fac_costs_plan p
+WHERE   ST_Intersects(b.geom,p.geom);
+
+-- streams
+INSERT INTO tmp_plancross (geom)
+SELECT  (ST_Dump(ST_Intersection(b.geom,p.geom))).geom
+FROM    bike_fac_costs_streams b,
+        bike_fac_costs_plan p
+WHERE   ST_Intersects(b.geom,p.geom);
+
+CREATE INDEX sidx_tmpplancrssgeom ON tmp_plancross USING GIST (geom); ANALYZE tmp_plancross;
+
+-- grab center of clusters
+WITH clusters AS (
+    SELECT  unnest(ST_ClusterWithin(geom,50)) AS geom
+    FROM    tmp_plancross
+)
+INSERT INTO automated.planned_crossings (geom)
+SELECT  (
+            SELECT      ST_ClosestPoint(
+                            bl.geom,
+                            (
+                                SELECT      geom
+                                FROM        ST_Dump(clusters.geom)
+                                ORDER BY    ST_Distance(geom,ST_Centroid(clusters.geom)) ASC
+                                LIMIT       1
+                            )
+                        )
+            FROM        barrier_lines bl
+            ORDER BY    ST_Distance(bl.geom,clusters.geom) ASC
+            LIMIT       1
+        )
+FROM    clusters;
 
 -- index
 CREATE INDEX sidx_planned_crossings_geom ON automated.planned_crossings USING GIST (geom);
@@ -34,7 +79,7 @@ FROM    barrier_lines bl
 WHERE   bl.id = (
             SELECT      id
             FROM        barrier_lines bl2
-            WHERE       ST_DWithin(planned_crossings.geom,bl2.geom,10)
+            WHERE       ST_DWithin(planned_crossings.geom,bl2.geom,30)
             ORDER BY    ST_Distance(planned_crossings.geom,bl2.geom)
             LIMIT       1
         );
