@@ -85,7 +85,7 @@ INSERT INTO automated.bike_fac_costs_rails (
 )
 SELECT  ST_Multi(ST_Force2D(geom)),
         11111
-FROM    osm_railroads;
+FROM    received.railroad_client_edits_20170630;
 
 -- insert streams
 INSERT INTO automated.bike_fac_costs_streams (

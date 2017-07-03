@@ -37,7 +37,7 @@ select id,
   oneway,
   z_order,
   service
-from osm_railroads
+from received.railroad_client_edits_20170630
 where tunnel = 0 and bridge = 0;
 
 --create spatial index on linestrings
