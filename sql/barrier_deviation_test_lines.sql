@@ -10,6 +10,7 @@ CREATE TABLE automated.barrier_deviation_test_lines (
     id SERIAL PRIMARY KEY,
     geom geometry(linestring,:db_srid),
     community_type TEXT,
+    point_type TEXT,
     spacing INTEGER,
     raster_buffer INTEGER,
     cost_exist INTEGER,
@@ -21,7 +22,7 @@ CREATE TABLE automated.barrier_deviation_test_lines (
 -- known points (planned, collectors, wiki)
 ------------------------------------------
 -- planned_crossings
-INSERT INTO automated.barrier_deviation_test_lines (geom, community_type, spacing, raster_buffer)
+INSERT INTO automated.barrier_deviation_test_lines (geom, community_type, spacing, raster_buffer, point_type)
 SELECT  ST_SetSRID(
             ST_Rotate(
                 ST_MakeLine(
@@ -41,11 +42,12 @@ SELECT  ST_SetSRID(
         ),
         community_type,
         spacing,
-        raster_buffer
+        raster_buffer,
+        'Planned facility'
 FROM    planned_crossings x;
 
 -- wiki_crossings
-INSERT INTO automated.barrier_deviation_test_lines (geom, community_type, spacing, raster_buffer)
+INSERT INTO automated.barrier_deviation_test_lines (geom, community_type, spacing, raster_buffer, point_type)
 SELECT  ST_SetSRID(
             ST_Rotate(
                 ST_MakeLine(
@@ -65,7 +67,8 @@ SELECT  ST_SetSRID(
         ),
         community_type,
         spacing,
-        raster_buffer
+        raster_buffer,
+        'Wikimap comment'
 FROM    wiki_crossings x
 WHERE   NOT EXISTS (
             SELECT  1
@@ -130,7 +133,7 @@ SELECT  ST_LineInterpolatePoint(geom,0.5) AS geom,
 FROM    tmp_segs;
 
 -- not near a collector crossing
-INSERT INTO automated.barrier_deviation_test_lines (geom, community_type, spacing, raster_buffer)
+INSERT INTO automated.barrier_deviation_test_lines (geom, community_type, spacing, raster_buffer, point_type)
 SELECT  CASE
             WHEN ST_DWithin(tmp_pts.geom,cc.geom,tmp_pts.spacing*0.3)
                 THEN    ST_SetSRID(
@@ -170,7 +173,8 @@ SELECT  CASE
         END,
         tmp_pts.community_type,
         tmp_pts.spacing,
-        tmp_pts.raster_buffer
+        tmp_pts.raster_buffer,
+        'Regular spacing for testing'
 FROM    tmp_pts,
         collector_crossings cc
 WHERE   cc.id = (
