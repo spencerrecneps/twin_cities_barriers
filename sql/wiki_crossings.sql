@@ -20,7 +20,7 @@ CREATE TABLE automated.wiki_crossings (
 WITH clusters AS (
     SELECT  ST_CollectionExtract(unnest(ST_ClusterWithin(wiki.geom,:cluster_tolerance)),1) AS geom
     FROM    received.wiki_comments wiki
-    WHERE   name = 'suggested new crossing'
+    WHERE   kml_name = 'suggested new crossing'
 )
 INSERT INTO automated.wiki_crossings (geom)
 SELECT  (
